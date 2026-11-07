@@ -1,0 +1,15 @@
+diferencia cruda E[Y|D=1]-E[Y|D=0] = 10.3 puntos
+ATE OLS (25 controles) = 4.8 | SE = 0.5 | IC95 = [3.8, 5.8]
+AIPW cross-fitting K=5 = 5.2 | SE = 0.6 | IC95 = [3.9, 6.4]
+trampa score_post      = -0.1  <- el coeficiente se atenúa (fuga de información)
+estrato bw=1 (bw alto (> mediana de train), n=224): efecto 7.2 IC95 [5.5, 8.8]
+estrato bw=0 (bw bajo (<= mediana de train), n=224): efecto 3.2 IC95 [1.4, 4.9]
+ESS = 388 (ESS/n = 0.87) | rango e = [0.071, 0.887] | solapamiento = 100%
+SMD máx (sin ponderar) = 0.43 | SMD ponderado máx = 0.03
+sensibilidad: E-value = 2.07 (IC 1.85) | RV OLS = 37.4 %
+placebo D: p = 0.005 | percentil = 100.0 | ok = True
+placebo Y (momage): efecto = 0.04 IC95 = [-0.23, 0.32] | ok = True
+validación train     : ATE = 5.16 IC95 = [3.93, 6.38] (n = 448)
+validación validation: ATE = 1.93 IC95 = [-2.45, 6.31] (n = 149)
+validación test      : ATE = 1.63 IC95 = [-3.91, 7.18] (n = 150)
+artefacto: artifacts/estimacion.json

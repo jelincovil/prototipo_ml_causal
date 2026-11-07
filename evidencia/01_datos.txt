@@ -1,0 +1,8 @@
+Esquema C-01: EsquemaCausal(tratamiento='treatment', resultado='outcome', covariables=('bw', 'b.head', 'preterm', 'birth.o', 'nnhealth', 'momage', 'sex', 'twin', 'b.marr', 'mom.lths', 'mom.hs', 'mom.scoll', 'cig', 'first', 'booze', 'drugs', 'work.dur', 'prenatal', 'ark', 'ein', 'har', 'mia', 'pen', 'tex', 'was'))
+esquema valida contra observed_train: OK (n = 448, tratados = 191)
+Verificación de splits (C-10):
+  train        hash OK  (448 filas, semilla 20240701)
+  validation   hash OK  (149 filas, semilla 20240701)
+  test         hash OK  (150 filas, semilla 20240701)
+La pared (C-10):
+  pared OK: truth_train.csv no existe en el paquete (reservado)

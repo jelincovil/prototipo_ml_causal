@@ -1,0 +1,30 @@
+ventanas de producción (contra champion = v0004, umbrales de la tarjeta: {'smd_max': 0.5, 'smd_ponderado_max': 0.25, 'psi_alerta': 0.25, 'solape_min': 0.3, 'efecto_estabilidad': 0.2})
+
+[sana           ] estado = pasa   | acción: continuar
+                  n=300 | PSI máx = 0.024 | SMD máx = 0.33 | SMD pond. = 0.07 | ESS/n = 0.8 | solape = 100%
+                  ATE ventana = 5.64 | ATE champion = 5.16 | diff = 0.49 (umbral 1.25)
+                  - todo dentro de umbral
+
+[deriva         ] estado = alerta | acción: reentrenar
+                  n=448 | PSI máx = 0.883 | SMD máx = 0.43 | SMD pond. = 0.03 | ESS/n = 0.87 | solape = 100%
+                  ATE ventana = 5.16 | ATE champion = 5.16 | diff = 0.0 (umbral 1.25)
+                  - deriva: PSI de bw = 0.88 (umbral 0.25)
+
+[positividad    ] estado = falla  | acción: abstenerse
+                  n=140 | PSI máx = 3.069 | SMD máx = 5.16 | SMD pond. = 5.16 | ESS/n = 1.0 | solape = 0%
+                  ATE ventana = 7.2 | ATE champion = 5.16 | diff = 2.04 (umbral 1.25)
+                  - solapamiento roto: 0% de unidades con e en [0.05, 0.95] (mínimo 30%)
+
+[balance        ] estado = alerta | acción: alertar
+                  n=448 | PSI máx = 0.029 | SMD máx = 0.49 | SMD pond. = 0.05 | ESS/n = 0.82 | solape = 100%
+                  ATE ventana = 3.63 | ATE champion = 5.16 | diff = 1.52 (umbral 1.25)
+                  - estabilidad: |ATE ventana - ATE champion| = 1.52 (umbral 1.25)
+
+[confusor_oculto] estado = alerta | acción: alertar
+                  n=448 | PSI máx = 0.0 | SMD máx = 0.24 | SMD pond. = 0.03 | ESS/n = 0.92 | solape = 100%
+                  ATE ventana = 1.0 | ATE champion = 5.16 | diff = 4.16 (umbral 1.25)
+                  - estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)
+
+puerta de producción (sana): pasa (continuar)
+peor acción entre ventanas de estrés: abstenerse (falla)
+artefacto: artifacts/monitor_estado.json

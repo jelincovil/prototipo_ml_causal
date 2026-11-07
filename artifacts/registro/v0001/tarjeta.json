@@ -1,0 +1,46 @@
+{
+  "estimando": "ATE de treatment sobre outcome (efecto total)",
+  "poblacion": "los 448 individuos de observed_train.csv del escenario real/ihdp (versión de entrenamiento, hash verificado)",
+  "supuestos": [
+    {
+      "nombre": "no confusión condicional en las 8 covariables pre-tratamiento",
+      "clase": "no_observable",
+      "tratamiento": "se declara; la identificación lo exige y ningún dato lo verifica"
+    },
+    {
+      "nombre": "soporte común (0 < e(X) < 1)",
+      "clase": "observable",
+      "tratamiento": "se mide: rango de e, ESS de Kish y fracción en zona de solapamiento"
+    },
+    {
+      "nombre": "consistencia / SUTVA",
+      "clase": "no_observable",
+      "tratamiento": "se declara; heredado del diseño del escenario"
+    },
+    {
+      "nombre": "covariables medidas antes del tratamiento",
+      "clase": "observable",
+      "tratamiento": "el benchmark lo declara; la trampa score_post muestra qué pasa si no"
+    }
+  ],
+  "umbrales": {
+    "smd_max": 0.5,
+    "psi_alerta": 0.25,
+    "solape_min": 0.3
+  },
+  "semilla": 4242,
+  "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
+  "estimador": "AIPW con cross-fitting K=5 (doblemente robusto); OLS solo de referencia",
+  "heterogeneidad": {
+    "corte": "bw",
+    "umbral": -0.01334726950142505,
+    "regla": "corte único por peso al nacer (bw) en la mediana de train: es el eje clínico del IHDP (bajo peso al nacer define la población del estudio), declarado antes de mirar los efectos y NO elegido por ganancia de varianza; la mediana preserva tamaño en ambas hojas",
+    "nota": "los intervalos de los estratos no se solapan: diferencia consistente con el corte declarado, pero no es un CATE",
+    "modelo_individual": {
+      "tipo": "proyección lineal del score AIPW sobre las covariables",
+      "r2": 0.095,
+      "que_cubre": "proyección lineal del score AIPW: efecto esperado para un perfil, no un CATE validado"
+    },
+    "que_cubre": "media de scores AIPW del estrato, no un CATE individual"
+  }
+}

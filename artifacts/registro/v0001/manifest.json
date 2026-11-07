@@ -1,0 +1,9 @@
+{
+  "version": "v0001",
+  "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
+  "puerta": "pasa",
+  "archivos": {
+    "estimacion.json": "685e67d5da5993a3d63368484be34924dcadddfc67c946e3b76cdbe6e818154a",
+    "tarjeta.json": "700d2ab2a9a7a3b5f67dc0b1c6c7b97806f261bc4c4aa8bab188ed9a8676d7ef"
+  }
+}

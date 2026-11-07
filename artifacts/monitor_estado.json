@@ -1,0 +1,117 @@
+{
+  "version": "v0005",
+  "timestamp": "2026-11-07T02:26:15.987701+00:00",
+  "ventana_produccion": "sana",
+  "estado": "pasa",
+  "accion": "continuar",
+  "estado_puerta": "pasa",
+  "peor_accion": "abstenerse",
+  "peor_estado_puerta": "falla",
+  "ventanas": {
+    "sana": {
+      "estado": "pasa",
+      "accion": "continuar",
+      "estado_puerta": "pasa",
+      "motivo": [
+        "todo dentro de umbral"
+      ],
+      "n": 300,
+      "psi_max": 0.024,
+      "smd_max": 0.33,
+      "smd_ponderado_max": 0.07,
+      "ess_sobre_n": 0.8,
+      "solapamiento": 1.0,
+      "ate_ventana": 5.64,
+      "ate_champion": 5.16,
+      "estabilidad_diff": 0.49,
+      "estabilidad_umbral": 1.25,
+      "estabilidad_ok": true,
+      "placebo_ok": true,
+      "control_negativo_ok": true
+    },
+    "deriva": {
+      "estado": "alerta",
+      "accion": "reentrenar",
+      "estado_puerta": "reentrenar",
+      "motivo": [
+        "deriva: PSI de bw = 0.88 (umbral 0.25)"
+      ],
+      "n": 448,
+      "psi_max": 0.883,
+      "smd_max": 0.43,
+      "smd_ponderado_max": 0.03,
+      "ess_sobre_n": 0.87,
+      "solapamiento": 1.0,
+      "ate_ventana": 5.16,
+      "ate_champion": 5.16,
+      "estabilidad_diff": 0.0,
+      "estabilidad_umbral": 1.25,
+      "estabilidad_ok": true,
+      "placebo_ok": true,
+      "control_negativo_ok": true
+    },
+    "positividad": {
+      "estado": "falla",
+      "accion": "abstenerse",
+      "estado_puerta": "falla",
+      "motivo": [
+        "solapamiento roto: 0% de unidades con e en [0.05, 0.95] (mínimo 30%)"
+      ],
+      "n": 140,
+      "psi_max": 3.069,
+      "smd_max": 5.16,
+      "smd_ponderado_max": 5.16,
+      "ess_sobre_n": 1.0,
+      "solapamiento": 0.0,
+      "ate_ventana": 7.2,
+      "ate_champion": 5.16,
+      "estabilidad_diff": 2.04,
+      "estabilidad_umbral": 1.25,
+      "estabilidad_ok": false,
+      "placebo_ok": true,
+      "control_negativo_ok": true
+    },
+    "balance": {
+      "estado": "alerta",
+      "accion": "alertar",
+      "estado_puerta": "alerta",
+      "motivo": [
+        "estabilidad: |ATE ventana - ATE champion| = 1.52 (umbral 1.25)"
+      ],
+      "n": 448,
+      "psi_max": 0.029,
+      "smd_max": 0.49,
+      "smd_ponderado_max": 0.05,
+      "ess_sobre_n": 0.82,
+      "solapamiento": 1.0,
+      "ate_ventana": 3.63,
+      "ate_champion": 5.16,
+      "estabilidad_diff": 1.52,
+      "estabilidad_umbral": 1.25,
+      "estabilidad_ok": false,
+      "placebo_ok": true,
+      "control_negativo_ok": true
+    },
+    "confusor_oculto": {
+      "estado": "alerta",
+      "accion": "alertar",
+      "estado_puerta": "alerta",
+      "motivo": [
+        "estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)"
+      ],
+      "n": 448,
+      "psi_max": 0.0,
+      "smd_max": 0.24,
+      "smd_ponderado_max": 0.03,
+      "ess_sobre_n": 0.92,
+      "solapamiento": 1.0,
+      "ate_ventana": 1.0,
+      "ate_champion": 5.16,
+      "estabilidad_diff": 4.16,
+      "estabilidad_umbral": 1.25,
+      "estabilidad_ok": false,
+      "placebo_ok": true,
+      "control_negativo_ok": true
+    }
+  }
+}

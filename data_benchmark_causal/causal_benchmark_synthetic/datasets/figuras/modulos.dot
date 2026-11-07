@@ -1,0 +1,91 @@
+// Dependencias entre módulos del prototipo.
+// Convención: A -> B significa "B hace import A" (la flecha apunta a lo necesario).
+digraph modulos {
+  graph [
+    rankdir=TB,
+    bgcolor="transparent",
+    nodesep=0.42,
+    ranksep=1.7,
+    pad=0.10,
+  ];
+  node [
+    shape=box,
+    style="rounded,filled",
+    fillcolor="#eef3f9",
+    color="#8aa2bd",
+    penwidth=1.0,
+    fontname="DejaVu Sans Mono",
+    fontsize=13,
+    height=0.46,
+    margin="0.18,0.10",
+  ];
+  edge [
+    color="#5b6b7c",
+    arrowsize=0.65,
+    penwidth=1.0,
+  ];
+
+  rutas [label="rutas.py", fillcolor="#dbe7f3", fontcolor="#1f3a5f"];
+
+  datos [label="datos.py"];
+  reg   [label="registro.py"];
+
+  sens  [label="sensibilidad.py"];
+
+  est   [label="estimacion.py"];
+  core  [label="servicio_core.py"];
+
+  mon   [label="monitor.py", fillcolor="#fdf6e3"];
+  srv   [label="servicio.py", fillcolor="#e0f2f1", color="#0e7490"];
+  pr    [label="pruebas_estimacion.py"];
+
+  humo  [label="humo.py"];
+
+  { rank=same; datos; reg; }
+  { rank=same; est; core; }
+  { rank=same; mon; srv; pr; }
+
+  // configuración común
+  rutas -> datos;
+  rutas -> reg;
+  rutas -> est;
+  rutas -> core;
+  rutas -> mon;
+  rutas -> pr;
+  rutas -> humo;
+
+  // esquema, hashes y pared
+  datos -> sens;
+  datos -> est;
+  datos -> mon;
+  datos -> pr;
+
+  // sensibilidad
+  sens -> est;
+  sens -> core;
+  sens -> pr;
+
+  // estimación
+  est -> mon;
+  est -> pr;
+
+  // registro
+  reg -> mon;
+  reg -> core;
+
+  // servicio
+  core -> srv;
+  core -> humo;
+  srv -> humo;
+
+  // import perezoso: solo al ejecutar registro.py como programa
+  est -> reg [
+    style=dashed,
+    color="#b45309",
+    fontcolor="#b45309",
+    fontname="Helvetica-Oblique",
+    fontsize=10,
+    label="import perezoso (solo en el CLI)",
+    constraint=false,
+  ];
+}

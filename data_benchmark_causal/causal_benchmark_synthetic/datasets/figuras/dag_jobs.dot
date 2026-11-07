@@ -1,0 +1,25 @@
+digraph dag_jobs {
+  graph [rankdir=LR, size="9,5.5", ratio=compress, fontname="Helvetica",
+         fontsize=10, bgcolor="white", pad=0.25, nodesep=0.5, ranksep=0.9];
+  node  [fontname="Helvetica", fontsize=9];
+  edge  [color="#6b7280", arrowsize=0.6, penwidth=0.7];
+
+  X [shape=plaintext, label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD COLSPAN="4" BGCOLOR="#eef3f9"><B>X: covariables pre-tratamiento (8)</B></TD></TR>
+      <TR><TD>age</TD><TD>educ</TD><TD>black</TD><TD>hispan</TD></TR>
+      <TR><TD>married</TD><TD>nodegree</TD><TD>re74</TD><TD>re75</TD></TR>
+    </TABLE>
+  >];
+
+  D [shape=circle, style=filled, fillcolor="#fde8e8", label="D", width=0.8];
+  Y [shape=circle, style=filled, fillcolor="#e6f4ea", label="Y", width=0.8];
+  U [shape=circle, style="dashed,filled", fillcolor="white",
+     color="#6b7280", fontcolor="#6b7280", label="U", width=0.7];
+
+  X -> D [penwidth=1.4, color="#334e68"];
+  X -> Y [penwidth=1.4, color="#334e68"];
+  D -> Y [color="#c81e1e", penwidth=2.4];
+  U -> D [style=dashed, color="#6b7280"];
+  U -> Y [style=dashed, color="#6b7280"];
+}

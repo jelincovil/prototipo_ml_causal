@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Graphviz (make dag / DoWhy)
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - name: Dependencias
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: verificar, pruebas y demo (real/ihdp)
+        env:
+          SIC_ESCENARIO: real/ihdp
+        run: make verificar pruebas demo

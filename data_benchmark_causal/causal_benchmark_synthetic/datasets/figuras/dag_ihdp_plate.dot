@@ -1,0 +1,40 @@
+digraph dag_ihdp_plate {
+  graph [rankdir=LR, size="11,7.5", ratio=compress, fontname="Helvetica",
+         fontsize=10, bgcolor="white", pad=0.25, nodesep=0.6, ranksep=1.1];
+  node  [fontname="Helvetica", fontsize=9];
+  edge  [color="#6b7280", arrowsize=0.6, penwidth=0.7];
+
+  X [shape=plaintext, label=<
+    <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5">
+      <TR><TD COLSPAN="7" BGCOLOR="#eef3f9"><B>X: covariables pre-tratamiento (25)</B></TD></TR>
+      <TR><TD>bw</TD><TD>b.head</TD><TD>preterm</TD><TD>birth.o</TD>
+          <TD>nnhealth</TD><TD>sex</TD><TD>twin</TD></TR>
+      <TR><TD>cig</TD><TD>first</TD><TD>booze</TD><TD>drugs</TD>
+          <TD>work.dur</TD><TD>prenatal</TD><TD></TD></TR>
+      <TR><TD>momage</TD><TD>mom.lths</TD><TD>mom.hs</TD><TD>mom.scoll</TD>
+          <TD>b.marr</TD><TD></TD><TD></TD></TR>
+      <TR><TD>ark</TD><TD>ein</TD><TD>har</TD><TD>mia</TD>
+          <TD>pen</TD><TD>tex</TD><TD>was</TD></TR>
+    </TABLE>
+  >];
+
+  D [shape=circle, style=filled, fillcolor="#fde8e8", label="D", width=0.8];
+  Y [shape=circle, style=filled, fillcolor="#e6f4ea", label="Y", width=0.8];
+  U [shape=circle, style="dashed,filled", fillcolor="white",
+     color="#6b7280", fontcolor="#6b7280", label="U", width=0.7];
+
+  X -> D [penwidth=1.4, color="#334e68"];
+  X -> Y [penwidth=1.4, color="#334e68"];
+  D -> Y [color="#c81e1e", penwidth=2.4];
+  U -> D [style=dashed, color="#6b7280"];
+  U -> Y [style=dashed, color="#6b7280"];
+
+  leg [shape=plaintext, label=<
+    <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">
+      <TR><TD ALIGN="LEFT"><FONT COLOR="#334e68">X → D, Y:</FONT> ajuste por observables</TD></TR>
+      <TR><TD ALIGN="LEFT"><FONT COLOR="#c81e1e">D → Y:</FONT> efecto de interés</TD></TR>
+      <TR><TD ALIGN="LEFT"><FONT COLOR="#6b7280">U ⇢ D, Y:</FONT> confusión no medida (hipotética)</TD></TR>
+    </TABLE>
+  >];
+  leg -> Y [style=invis];
+}

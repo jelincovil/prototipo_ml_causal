@@ -1,0 +1,37 @@
+{
+  "tratamiento_permutado": {
+    "metodo": "placebo de tratamiento permutado (AIPW, pliegues fijos)",
+    "n_rep": 200,
+    "semilla": 4242,
+    "ate_observado": 5.156995119845635,
+    "placebo_media": -0.04062421218076927,
+    "placebo_sd": 0.6187756148164905,
+    "placebo_ic95": [
+      -1.4158668205255567,
+      1.0571229441726282
+    ],
+    "percentil_observado": 100.0,
+    "p_valor_aprox": 0.004975124378109453,
+    "dentro_del_ic_placebo": false,
+    "placebo_ok": true,
+    "lectura": "Bajo efecto cero, los placebo se centran en -0.04 (DE 0.62); el ATE observado (5.16) está en el percentil 100.0 (p Monte Carlo = 0.005).",
+    "que_no_prueba": "No prueba ignorabilidad: un estimador confundido también puede rechazar la nula de placebo. Evalúa calibración e implementación."
+  },
+  "resultado_permutado": {
+    "metodo": "placebo de resultado permutado",
+    "variable_base": "momage",
+    "variable_permutada": "__placebo_outcome__",
+    "efecto": 0.042912425120899274,
+    "ic95": [
+      -0.2312895159533132,
+      0.31711436619511174
+    ],
+    "sd_variable": 1.0326346026832693,
+    "umbral_material": 0.10326346026832695,
+    "dentro_de_cero": true,
+    "material": false,
+    "control_negativo_ok": true,
+    "lectura": "Se permutó momage y se usó como pseudo-resultado: efecto 0.04 (IC 95 % [-0.23, 0.32]). Umbral material: 0.10.",
+    "que_no_prueba": "No prueba ignorabilidad ni ausencia de confusión. Es un diagnóstico de calibración con un resultado sin relación causal con D."
+  }
+}

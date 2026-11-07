@@ -1,0 +1,5 @@
+registrada v0004 | integridad: OK
+mutación detectada: SÍ (hash distinto del manifiesto -> bloqueado)
+promoción bloqueada correctamente para v9999 (falla)
+champion -> v0004 (alias_champion.json actualizado)
+champion resuelve a: v0004 | alias íntegro: OK

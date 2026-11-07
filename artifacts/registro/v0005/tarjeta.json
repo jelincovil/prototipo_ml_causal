@@ -1,0 +1,177 @@
+{
+  "estimando": "ATE de treatment sobre outcome (efecto total)",
+  "poblacion": "los 448 individuos de observed_train.csv del escenario real/ihdp (versión de entrenamiento, hash verificado)",
+  "supuestos": [
+    {
+      "nombre": "no confusión condicional en las 25 covariables pre-tratamiento",
+      "clase": "no_observable",
+      "tratamiento": "se declara; la identificación lo exige y ningún dato lo verifica"
+    },
+    {
+      "nombre": "soporte común (0 < e(X) < 1)",
+      "clase": "observable",
+      "tratamiento": "se mide: rango de e, ESS de Kish y fracción en zona de solapamiento"
+    },
+    {
+      "nombre": "consistencia / SUTVA",
+      "clase": "no_observable",
+      "tratamiento": "se declara; heredado del diseño del escenario"
+    },
+    {
+      "nombre": "covariables medidas antes del tratamiento",
+      "clase": "observable",
+      "tratamiento": "el benchmark lo declara; la trampa score_post muestra qué pasa si no"
+    }
+  ],
+  "umbrales": {
+    "smd_max": 0.5,
+    "smd_ponderado_max": 0.25,
+    "psi_alerta": 0.25,
+    "solape_min": 0.3,
+    "efecto_estabilidad": 0.2
+  },
+  "semilla": 4242,
+  "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
+  "estimador": "AIPW con cross-fitting K=5 (doblemente robusto); OLS solo de referencia",
+  "uso_previsto": "Docencia y benchmark sintético. No usar para decisiones clínicas, laborales ni de política pública real.",
+  "limitaciones": [
+    "Datos sintéticos: los supuestos se sostienen por diseño del DGP, no por evidencia de datos reales.",
+    "Modelos de resultado y propensión lineales/logísticos; sin learners no lineales ni repeated cross-fitting.",
+    "La proyección individual no es un CATE validado y su R² es bajo.",
+    "El placebo y el control negativo son diagnósticos de calibración, no pruebas de ignorabilidad.",
+    "Los umbrales del monitor son convenciones iniciales, no leyes universales."
+  ],
+  "soporte": {
+    "rango_propension": [
+      0.07054431526679307,
+      0.8867258610971368
+    ],
+    "ess": 387.6772885632863,
+    "ess_sobre_n": 0.8653510905430498,
+    "fraccion_solapamiento": 1.0,
+    "regla_abstencion": "fuera del rango observado de entrenamiento, el servicio se abstiene y no devuelve número"
+  },
+  "puerta": {
+    "estado_registro": "pasa",
+    "umbrales": {
+      "smd_max": 0.5,
+      "smd_ponderado_max": 0.25,
+      "psi_alerta": 0.25,
+      "solape_min": 0.3,
+      "efecto_estabilidad": 0.2
+    },
+    "acciones": {
+      "continuar": "todo dentro de umbral",
+      "alertar": "revisar balance o estabilidad del efecto antes de reentrenar",
+      "revisar_identificacion": "placebo o control negativo falla: revisar identificación",
+      "reentrenar": "deriva de covariables: reentrenar con datos recientes",
+      "abstenerse": "soporte insuficiente: no devolver número"
+    },
+    "nota": "el monitor puede actualizar el estado; el servicio lee artifacts/monitor_estado.json y cae al manifiesto si no existe"
+  },
+  "sensibilidad": {
+    "e_value": {
+      "metodo": "E-value para efecto continuo estandarizado (aprox. RR de Chinn/VanderWeele)",
+      "ate": 5.156995119845635,
+      "sd_y": 15.044418993534649,
+      "efecto_estandarizado": 0.3427845981996286,
+      "e_value_punto": 2.07321918229489,
+      "e_value_ic": 1.8517641804511555,
+      "limite_ic_usado": 3.9300630180948044,
+      "supuestos": "Resultado continuo; RR aproximada vía d estandarizado. No es una razón de riesgos literal.",
+      "lectura": "Un confusor no medido tendría que asociarse con D y Y, condicionando en X, con una razón de riesgos aproximada de al menos 2.07 para explicar el efecto puntual; el límite del IC más cercano a cero exige al menos 1.85.",
+      "limites": "Aproximación para resultado continuo; no es una cota exacta. Se complementa con el valor de robustez del OLS."
+    },
+    "valor_robustez_ols": {
+      "metodo": "Valor de robustez de Cinelli & Hazlett (2020)",
+      "t": 9.706141449461933,
+      "df": 421,
+      "q": 1.0,
+      "rv": 0.37421297744876625,
+      "rv_pct": 37.421297744876625,
+      "lectura": "Un confusor no medido tendría que explicar al menos 37.4 % del R² parcial de D y de Y, después de condicionar en X, para llevar el coeficiente OLS a cero.",
+      "limites": "Exacto bajo el modelo lineal de sesgo por omisión para el OLS; no es una propiedad exacta del AIPW."
+    },
+    "lectura": "E-value puntual 2.07 (IC 1.85); valor de robustez OLS 37.4 %.",
+    "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS."
+  },
+  "placebo": {
+    "tratamiento_permutado": {
+      "metodo": "placebo de tratamiento permutado (AIPW, pliegues fijos)",
+      "n_rep": 200,
+      "semilla": 4242,
+      "ate_observado": 5.156995119845635,
+      "placebo_media": -0.04062421218076927,
+      "placebo_sd": 0.6187756148164905,
+      "placebo_ic95": [
+        -1.4158668205255567,
+        1.0571229441726282
+      ],
+      "percentil_observado": 100.0,
+      "p_valor_aprox": 0.004975124378109453,
+      "dentro_del_ic_placebo": false,
+      "placebo_ok": true,
+      "lectura": "Bajo efecto cero, los placebo se centran en -0.04 (DE 0.62); el ATE observado (5.16) está en el percentil 100.0 (p Monte Carlo = 0.005).",
+      "que_no_prueba": "No prueba ignorabilidad: un estimador confundido también puede rechazar la nula de placebo. Evalúa calibración e implementación."
+    },
+    "resultado_permutado": {
+      "metodo": "placebo de resultado permutado",
+      "variable_base": "momage",
+      "variable_permutada": "__placebo_outcome__",
+      "efecto": 0.042912425120899274,
+      "ic95": [
+        -0.2312895159533132,
+        0.31711436619511174
+      ],
+      "sd_variable": 1.0326346026832693,
+      "umbral_material": 0.10326346026832695,
+      "dentro_de_cero": true,
+      "material": false,
+      "control_negativo_ok": true,
+      "lectura": "Se permutó momage y se usó como pseudo-resultado: efecto 0.04 (IC 95 % [-0.23, 0.32]). Umbral material: 0.10.",
+      "que_no_prueba": "No prueba ignorabilidad ni ausencia de confusión. Es un diagnóstico de calibración con un resultado sin relación causal con D."
+    }
+  },
+  "validacion_particiones": {
+    "train": {
+      "n": 448,
+      "ate": 5.156995119845635,
+      "se": 0.6259857661994034,
+      "ic": [
+        3.9300630180948044,
+        6.3839272215964655
+      ]
+    },
+    "validation": {
+      "n": 149,
+      "ate": 1.9328044568922507,
+      "se": 2.2350779959061606,
+      "ic": [
+        -2.447948415083824,
+        6.313557328868326
+      ]
+    },
+    "test": {
+      "n": 150,
+      "ate": 1.6303903064119623,
+      "se": 2.829255968460622,
+      "ic": [
+        -3.9149513917708574,
+        7.175732004594781
+      ]
+    }
+  },
+  "heterogeneidad": {
+    "corte": "bw",
+    "umbral": -0.01334726950142505,
+    "regla": "corte único por peso al nacer (bw) en la mediana de train: es el eje clínico del IHDP (bajo peso al nacer define la población del estudio), declarado antes de mirar los efectos y NO elegido por ganancia de varianza; la mediana preserva tamaño en ambas hojas",
+    "nota": "los intervalos de los estratos no se solapan: diferencia consistente con el corte declarado, pero no es un CATE",
+    "modelo_individual": {
+      "tipo": "proyección lineal del score AIPW sobre las covariables",
+      "r2": 0.095,
+      "que_cubre": "proyección lineal del score AIPW: efecto esperado para un perfil, no un CATE validado"
+    },
+    "que_cubre": "media de scores AIPW del estrato, no un CATE individual"
+  },
+  "version_esquema": "1.1"
+}

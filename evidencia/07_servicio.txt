@@ -1,0 +1,14 @@
+/salud: 200 {'estado': 'ok', 'version': 'v0004', 'estimando': 'ATE de treatment sobre outcome (efecto total)', 'estado_puerta': 'pasa'}
+/efecto: 200 efecto=5.2 ic95=[3.9, 6.4] version=v0004 puerta=pasa
+/consulta dentro: 200 estado=respuesta efecto=7.2 puerta=pasa
+/consulta fuera (bw=4.05316): 200 estado=abstencion motivo=bw=4.05316 fuera de [-3.1332, 3.0532] (sin número)
+determinismo: dos llamadas idénticas -> iguales
+/efecto_individual dentro: 200 estado=respuesta efecto=9.1 ic95=[6.1, 12.0] r2=0.095
+/efecto_individual fuera (bw=4.05316): 200 estado=abstencion (sin número)
+/efecto?formato=texto: 200 (12 líneas) — lecturas legibles OK
+puerta falla: abstención sin número OK
+/efecto_individual?formato=texto: 200 encabezado OK
+/ (formulario): 200 — 25 campos
+/calcular: 200 informe generado
+
+HUMO: OK

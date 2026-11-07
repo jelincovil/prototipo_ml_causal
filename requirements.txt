@@ -1,0 +1,13 @@
+# Prototipo semana 4 — pins validados con Python 3.13 (make demo / make humo)
+numpy==2.4.2
+scipy==1.17.0
+pandas==2.3.3
+networkx==3.6.1
+pydot==4.0.1
+dowhy==0.14
+fastapi==0.135.3
+uvicorn==0.44.0
+httpx==0.28.1
+matplotlib==3.10.8
+ipykernel==7.2.0
+jupyterlab==4.5.11

@@ -1,0 +1,67 @@
+digraph dag_ihdp_detalle {
+  graph [rankdir=LR, size="16,11", ratio=compress, fontname="Helvetica",
+         fontsize=9, bgcolor="white", pad=0.2, nodesep=0.18, ranksep=0.75,
+         splines=spline, compound=true];
+  node  [fontname="Helvetica", fontsize=8, shape=box, style="rounded,filled",
+         fillcolor="#eef3f9", color="#9db3cc", penwidth=0.6, margin="0.05,0.03"];
+  edge  [color="#9aa5b1", arrowsize=0.45, penwidth=0.45];
+
+  subgraph cluster_nacimiento {
+    label="Nacimiento / niño"; fontsize=9; color="#cbd5e1"; style="rounded,dashed";
+    bw; b_head [label="b.head"]; preterm; birth_o [label="birth.o"];
+    nnhealth; sex; twin;
+  }
+  subgraph cluster_prenatal {
+    label="Conducta prenatal"; fontsize=9; color="#cbd5e1"; style="rounded,dashed";
+    cig; first; booze; drugs; work_dur [label="work.dur"]; prenatal;
+  }
+  subgraph cluster_madre {
+    label="Madre / hogar"; fontsize=9; color="#cbd5e1"; style="rounded,dashed";
+    momage; mom_lths [label="mom.lths"]; mom_hs [label="mom.hs"];
+    mom_scoll [label="mom.scoll"]; b_marr [label="b.marr"];
+  }
+  subgraph cluster_sitio {
+    label="Sitio / contexto"; fontsize=9; color="#cbd5e1"; style="rounded,dashed";
+    ark; ein; har; mia; pen; tex; was;
+  }
+
+  D [shape=circle, style=filled, fillcolor="#fde8e8", color="#c81e1e",
+     label="D", width=0.75, fontsize=11];
+  Y [shape=circle, style=filled, fillcolor="#e6f4ea", color="#2f855a",
+     label="Y", width=0.75, fontsize=11];
+  U [shape=circle, style="dashed,filled", fillcolor="white", color="#6b7280",
+     fontcolor="#6b7280", label="U", width=0.65, fontsize=10];
+
+  bw -> D; bw -> Y;
+  b_head -> D; b_head -> Y;
+  preterm -> D; preterm -> Y;
+  birth_o -> D; birth_o -> Y;
+  nnhealth -> D; nnhealth -> Y;
+  sex -> D; sex -> Y;
+  twin -> D; twin -> Y;
+
+  cig -> D; cig -> Y;
+  first -> D; first -> Y;
+  booze -> D; booze -> Y;
+  drugs -> D; drugs -> Y;
+  work_dur -> D; work_dur -> Y;
+  prenatal -> D; prenatal -> Y;
+
+  momage -> D; momage -> Y;
+  mom_lths -> D; mom_lths -> Y;
+  mom_hs -> D; mom_hs -> Y;
+  mom_scoll -> D; mom_scoll -> Y;
+  b_marr -> D; b_marr -> Y;
+
+  ark -> D; ark -> Y;
+  ein -> D; ein -> Y;
+  har -> D; har -> Y;
+  mia -> D; mia -> Y;
+  pen -> D; pen -> Y;
+  tex -> D; tex -> Y;
+  was -> D; was -> Y;
+
+  D -> Y [color="#c81e1e", penwidth=2.2, arrowsize=0.8];
+  U -> D [style=dashed, color="#6b7280", arrowsize=0.6];
+  U -> Y [style=dashed, color="#6b7280", arrowsize=0.6];
+}
