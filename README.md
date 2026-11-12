@@ -1,5 +1,27 @@
 # Proyecto — «Puente» (semana 4)
 
+## Puesta en marcha en 1 comando
+
+Linux/Mac:
+
+```sh
+bash setup.sh && bash arrancar.sh
+```
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File setup.ps1; powershell -ExecutionPolicy Bypass -File arrancar.ps1
+```
+
+Docker (opcional):
+
+```sh
+docker compose up
+```
+
+El instalador usa `uv`: instala `uv` y Python 3.13 si faltan, crea o reutiliza `.venv` e instala `requirements.txt`. El servicio usa el escenario `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo.
+
 Repositorio público del prototipo: **[github.com/jelincovil/prototipo_ml_causal](https://github.com/jelincovil/prototipo_ml_causal)**.
 
 **Acceso para auditoría (sin cuenta ni token):** [índice del código fuente y enlaces de texto directo](AUDITORIA.md) · [descargar ZIP](https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/heads/main).
