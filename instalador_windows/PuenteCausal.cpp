@@ -1324,7 +1324,8 @@ int SelfTest() {
                     L"& { if ($args.Count -ne 2 -or $args[0] -ne 'uno dos' -or "
                     L"$args[1] -ne 'C:\\ruta\\archivo.zip') { exit 87 } }",
                     L"uno dos", L"C:\\ruta\\archivo.zip"}, fs::temp_directory_path());
-    } catch (...) {
+    } catch (const std::exception& error) {
+        AppendLog(L"Autoevaluación de argumentos PowerShell: " + Utf8ToWide(error.what()));
         return 15;
     }
     Health health = ParseHealth(
@@ -1367,19 +1368,24 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show_command) {
     if (arguments) {
         LocalFree(arguments);
     }
-    if (self_test) {
-        try {
-            return SelfTest();
-        } catch (...) {
-            return 20;
-        }
-    }
     try {
         fs::path log = LogPath();
         EnsureDirectory(log.parent_path());
         g_log_file.open(log, std::ios::app);
     } catch (const std::exception&) {
         // La ventana seguirá mostrando errores aunque tampoco pueda abrir el registro.
+    }
+    if (self_test) {
+        try {
+            int result = SelfTest();
+            AppendLog(L"Autoevaluación terminada con código " + std::to_wstring(result));
+            return result;
+        } catch (const std::exception& error) {
+            AppendLog(L"ERROR en la autoevaluación: " + Utf8ToWide(error.what()));
+            return 20;
+        } catch (...) {
+            return 20;
+        }
     }
     if (smoke_test) {
         return SmokeTest();

@@ -30,7 +30,15 @@ jobs:
         run: cmake --build build --config Release --parallel
 
       - name: Autoevaluación sin interfaz gráfica
-        run: ctest --test-dir build -C Release --output-on-failure
+        shell: pwsh
+        run: |
+          ctest --test-dir build -C Release --output-on-failure
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $log = Join-Path $env:LOCALAPPDATA "PuenteCausal/registros/lanzador.log"
+            if (Test-Path $log) { Get-Content $log -Tail 100 }
+            exit $code
+          }
 
       - name: Instalación y servicio reales al publicar
         if: github.event_name == 'release'
