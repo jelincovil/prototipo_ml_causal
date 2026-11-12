@@ -1109,17 +1109,23 @@ una sustitución de las pruebas en el equipo de cada usuario.
   [Docker Compose],
     [Revisión estática de `docker-compose.yml`],
     [No ejecutado: el plugin Compose no estaba instalado],
+  [Windows / lanzador gráfico],
+    [Compilación MSVC y `ctest --self-test` en `windows-2022`, ejecución Actions 43322853322],
+    [Ambas superadas. Publicar exige también instalación y arranque `--smoke-test`, integridad,
+    puerta `pasa` y `/efecto` válidos; los assets no se adjuntan si falla. Falta comprobar la
+    interacción gráfica en el PC del usuario],
   [Windows / PowerShell],
     [Revisión estática de los `.ps1` y comandos, compatibles con sintaxis 5.1],
-    [No ejecutado en Windows nativo ni con PowerShell; requiere prueba local],
+    [Scripts no ejecutados en Windows nativo; el lanzador recomendado no depende de ellos],
 )
 
 Las pruebas de `humo.py` también comprobaron fallo cerrado ante alias/manifiesto ausentes y
 JSON de estimación/monitor corruptos, usando copias temporales. La auditoría no ejecutó
 `make demo` ni `make evidencia` y mantuvo los hashes de champion y artefactos conservados.
 Persisten límites de reproducibilidad: no hay lockfile de dependencias transitivas ni digest
-fijado para la imagen base Docker. Windows, Compose, otras arquitecturas y una exposición
-real a Internet no quedan certificados por estas pruebas.
+fijado para la imagen base Docker. Los scripts PowerShell, la GUI en el PC del usuario,
+Compose, otras arquitecturas y una exposición real a Internet no quedan certificados por
+estas pruebas.
 
 = Interpretación final para lectores no técnicos
 
