@@ -58,8 +58,11 @@ jobs:
         shell: pwsh
         run: |
           $exe = Resolve-Path "build/Release/PuenteCausal.exe"
-          $hash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
-          [IO.File]::WriteAllText("$PWD/PuenteCausal.exe", [IO.File]::ReadAllBytes($exe))
+          $originalHash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
+          $destination = Join-Path $PWD "PuenteCausal.exe"
+          Copy-Item -LiteralPath $exe -Destination $destination -Force
+          $hash = (Get-FileHash -Algorithm SHA256 $destination).Hash.ToLowerInvariant()
+          if ($hash -ne $originalHash) { throw "La copia del ejecutable cambió sus bytes." }
           [IO.File]::WriteAllText("$PWD/PuenteCausal.exe.sha256", "$hash  PuenteCausal.exe`n", [Text.Encoding]::ASCII)
           Write-Host "SHA-256: $hash"
 
@@ -89,4 +92,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$env:RELEASE_TAG" PuenteCausal.exe PuenteCausal.exe.sha256 --clobber
+        run: |
+          $expected = ((Get-Content -Raw "PuenteCausal.exe.sha256") -split '\s+')[0]
+          $actual = (Get-FileHash -Algorithm SHA256 "PuenteCausal.exe").Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "El ejecutable no coincide con su SHA-256." }
+          gh release upload "$env:RELEASE_TAG" PuenteCausal.exe PuenteCausal.exe.sha256 --repo "${{ github.repository }}" --clobber

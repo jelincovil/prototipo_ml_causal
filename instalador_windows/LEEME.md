@@ -28,7 +28,7 @@ Usa exclusivamente esta carpeta:
 
 Normalmente corresponde a `C:\Users\<usuario>\AppData\Local\PuenteCausal`. En el Explorador puedes pegar `%LOCALAPPDATA%\PuenteCausal` en la barra de direcciones.
 
-- `app/`: fuente de `v1.0.2` del repositorio y artefactos conservados.
+- `app/`: fuente de `v1.0.3` del repositorio y artefactos conservados.
 - `herramientas/`: `uv` 0.13.8 y Python 3.13 administrado por `uv`.
 - `cache/`: descargas de paquetes utilizadas por `uv`.
 - `registros/lanzador.log`: instalación, arranque y errores del lanzador.
@@ -45,7 +45,7 @@ Una instalación existente se reutiliza. **Reparar entorno** pide confirmación,
 
 Conexión necesaria la primera vez para obtener:
 
-- el ZIP de `v1.0.2` desde `codeload.github.com`;
+- el ZIP de `v1.0.3` desde `codeload.github.com`;
 - `uv` 0.13.8 desde su release oficial en `github.com/astral-sh/uv`;
 - Python 3.13 y los paquetes de `requirements.txt` desde las fuentes que resuelva `uv`.
 

@@ -33,7 +33,7 @@ using namespace std::chrono_literals;
 
 constexpr wchar_t kWindowClass[] = L"PuenteCausalVentana";
 constexpr wchar_t kProjectUrl[] =
-    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.2";
+    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.3";
 constexpr wchar_t kUvVersion[] = L"0.13.8";
 constexpr wchar_t kUvX64Url[] =
     L"https://github.com/astral-sh/uv/releases/download/0.13.8/"
@@ -703,7 +703,7 @@ void EnsureSource() {
         return;
     }
     fs::path root = InstallRoot();
-    fs::path archive = root / L"descargas" / L"prototipo-v1.0.2.zip";
+    fs::path archive = root / L"descargas" / L"prototipo-v1.0.3.zip";
     fs::path extracted = root / L"trabajo" / L"fuente";
     RemoveOwnedDirectory(extracted);
     DownloadFile(kProjectUrl, archive);
