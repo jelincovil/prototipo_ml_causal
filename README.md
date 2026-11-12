@@ -11,8 +11,13 @@ bash setup.sh && bash arrancar.sh
 Windows:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File setup.ps1; powershell -ExecutionPolicy Bypass -File arrancar.ps1
+powershell -ExecutionPolicy Bypass -File setup.ps1
+if ($LASTEXITCODE -eq 0) {
+    powershell -ExecutionPolicy Bypass -File arrancar.ps1
+}
 ```
+
+Es compatible con Windows PowerShell 5.1: no usa `&&` y no arranca el servicio si la instalación falla. Este flujo ha recibido revisión estática, pero no se ha ejecutado en Windows nativo; consulta [Estado de la segunda verificación](#estado-de-la-segunda-verificación-multiplataforma).
 
 Docker (opcional):
 
@@ -20,7 +25,7 @@ Docker (opcional):
 docker compose up
 ```
 
-El instalador usa `uv`: instala `uv` y Python 3.13 si faltan, crea o reutiliza `.venv` e instala `requirements.txt`. El servicio usa el escenario `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo.
+El instalador usa `uv`: instala `uv` y Python 3.13 si faltan, **recrea `.venv`** e instala `requirements.txt`. Es idempotente, pero descarta paquetes adicionales o personalizaciones del entorno anterior. El servicio usa `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo.
 
 Repositorio público del prototipo: **[github.com/jelincovil/prototipo_ml_causal](https://github.com/jelincovil/prototipo_ml_causal)**.
 
@@ -73,11 +78,9 @@ obtuvo coberturas IC95 de **0,97 (AIPW)**, **0,96 (OLS ajustado)** y **0,00
 calibración exacta. Estas cifras solo se refieren a ese DGP, no a IHDP/jobs ni
 a datos reales.
 
-## Empezar
+## Instalación manual alternativa (sin los scripts)
 
-Requisitos: **Python 3.13**. Las dependencias tienen versiones exactas fijadas en
-`requirements.txt`. Graphviz (`dot`) solo se necesita para `make dag`; Typst, para
-`make cierre`.
+No ejecutes este bloque después de `setup`: es una alternativa para quien ya administra su entorno. Requiere **Python 3.13**:
 
 ```sh
 python3.13 -m venv .venv
@@ -86,22 +89,33 @@ python -m pip install -r requirements.txt
 export SIC_ESCENARIO=synthetic/ihdp
 ```
 
-Si ya tienes un entorno con esas dependencias, actívalo y úsalo en lugar de
-crear `.venv`.
+`requirements.txt` fija versiones exactas de las **dependencias directas**, pero no es un lockfile de todas las dependencias transitivas. `uv pip check` comprueba compatibilidad del entorno instalado; no garantiza una reconstrucción byte a byte. Graphviz (`dot`) solo se necesita para `make dag`; Typst, para `make cierre`; `make` y las herramientas de hashes solo para comprobaciones o mantenimiento, no para instalar.
 
 ## Comprobar el paquete existente
 
-Con el entorno y `SIC_ESCENARIO=synthetic/ihdp` activos:
+No hace falta activar el entorno ni tener `make`. En Linux/macOS, desde la raíz:
 
 ```sh
-make verificar    # esquema, hashes de splits y separación de la verdad
-make pruebas      # fórmulas, identificación, sensibilidad y contratos del servicio
-make humo         # carga e integridad del champion; respuestas y abstenciones
+SIC_ESCENARIO=synthetic/ihdp .venv/bin/python datos.py
+SIC_ESCENARIO=synthetic/ihdp .venv/bin/python pruebas_estimacion.py
+SIC_ESCENARIO=synthetic/ihdp .venv/bin/python humo.py
 shasum -a 256 -c evidencia/SHA256SUMS
+# En Linux, si shasum no está disponible:
+sha256sum -c evidencia/SHA256SUMS
 ```
 
-Estas comprobaciones no cambian el champion. Resultado esperado: `PRUEBAS: OK`,
-`HUMO: OK` y todos los hashes correctos.
+En Windows PowerShell:
+
+```powershell
+$env:SIC_ESCENARIO = "synthetic/ihdp"
+.\.venv\Scripts\python.exe datos.py
+.\.venv\Scripts\python.exe pruebas_estimacion.py
+.\.venv\Scripts\python.exe humo.py
+```
+
+`Get-FileHash -Algorithm SHA256 <archivo>` permite contrastar un archivo individual con `evidencia/SHA256SUMS`; no procesa automáticamente toda la lista. Con `make` y el entorno activado, los atajos equivalentes son `make verificar`, `make pruebas` y `make humo`.
+
+Estas comprobaciones no cambian el champion. Resultado esperado: esquema, splits y pared de verdad correctos, `PRUEBAS: OK`, `HUMO: OK` y todos los hashes correctos. Los hashes detectan diferencias respecto de la lista conservada, pero no firman ni autentican el origen de los archivos.
 
 ## Regenerar el flujo
 
@@ -113,7 +127,11 @@ make pruebas      # conviene ejecutarlo después de regenerar
 
 **Atención:** `make demo` y `make evidencia` crean una nueva versión inmutable
 `vNNNN` y promueven un nuevo champion. No son comandos de solo lectura.
+`make demo` verifica los CSV incluidos y luego ejecuta estimación → registro → monitor → humo; **no genera el dataset IHDP desde cero**. `cobertura.py` simula otro DGP ilustrativo, no regenera IHDP.
 `make evidencia` también sobrescribe los archivos generados dentro de `evidencia/`.
+
+El orden registro → monitor **no es transaccional**: `registro.py` puede promover antes de que corra el monitor y no hay rollback automático si una etapa posterior falla. `promover()` bloquea únicamente una versión cuyo `manifest.puerta` ya sea `falla`; `alerta` requiere aceptación explícita. Tras regenerar, comprueba alias, `monitor_estado.json` y `/salud`.
+
 El champion conservado es **`v0008`**; las versiones históricas **`v0001`–`v0007`**
 permanecen intactas. Editar documentación o hashes de `evidencia/` no promueve
 una versión nueva.
@@ -122,7 +140,7 @@ Otros objetivos útiles:
 
 ```sh
 make dag          # regenera los SVG con Graphviz
-make cierre       # compila dataset_y_metodo.typ a PDF
+make cierre       # compila manual_sistema_causal.typ a PDF
 make cobertura    # opcional: Monte Carlo del DGP propio; escribe cobertura.json
 make limpiar      # borra TODO artifacts/, incluidos champion y versiones
 ```
@@ -151,8 +169,7 @@ Abrir:
 - <http://127.0.0.1:8000/salud> — versión, puerta, integridad e identificación.
 - <http://127.0.0.1:8000/docs> — documentación interactiva de FastAPI.
 
-Pulsar **Ctrl-C** para detenerlo. Reiniciar después de cambiar de escenario o de
-champion: el bundle se carga en memoria al arrancar.
+Pulsar **Ctrl-C** para detenerlo. El bundle válido se carga en la **primera consulta** y se cachea hasta reiniciar; una carga fallida no se cachea, de modo que puede recuperarse tras corregir el artefacto. Reinicia después de cambiar de escenario, champion o monitor cuando ya exista una caché válida.
 
 ## Qué devuelve la API
 
@@ -169,14 +186,15 @@ champion: el bundle se carga en memoria al arrancar.
 - `GET /` y `GET /calcular` — formulario web.
 
 El servicio no lee CSV: usa únicamente el bundle del champion. Si la integridad
-falla, la puerta de producción es `falla` o un perfil queda fuera de soporte, se
-abstiene sin inventar un número. Los artefactos se serializan como **JSON**; no se
-usan `pickle` ni `joblib`.
+falla, la puerta activa es `falla` o un perfil queda fuera de soporte, se
+abstiene sin inventar un número. Los artefactos son **JSON**, no `pickle` ni `joblib`; los hashes verifican diferencias, pero no autentican su procedencia.
+
+Las entradas deben ser objetos JSON con números finitos. La validación actual no define un esquema Pydantic por covariable: un valor como `{"bw":"alto"}` puede producir **HTTP 500**, no una abstención. Los clientes deben validar tipos y distinguir errores HTTP de abstenciones causales.
 
 ## Orden de lectura
 
 1. [`docs/pregunta_ihdp.md`](docs/pregunta_ihdp.md) — pregunta, estimando, supuestos, resultados históricos y límites.
-2. [`data_benchmark_causal/causal_benchmark_synthetic/datasets/dataset_y_metodo.pdf`](data_benchmark_causal/causal_benchmark_synthetic/datasets/dataset_y_metodo.pdf)
+2. [`data_benchmark_causal/causal_benchmark_synthetic/datasets/manual_sistema_causal.pdf`](data_benchmark_causal/causal_benchmark_synthetic/datasets/manual_sistema_causal.pdf)
    — explicación completa; el fuente editable es el `.typ` vecino.
 3. `datos.py` → `estimacion.py` → `registro.py` → `monitor.py` →
    `servicio_core.py` → `servicio.py` — recorrido del dato a la API.
@@ -191,7 +209,7 @@ rutas.py                 raíz del proyecto y selección de escenario
 datos.py                 esquema, hashes de splits y pared de verdad
 estimacion.py            AIPW, OLS, diagnósticos e identificación DoWhy
 sensibilidad.py          E-value, robustez, Manski y placebos
-registro.py              tarjeta, manifiesto y promoción segura
+registro.py              tarjeta, manifiesto y promoción con comprobaciones locales
 monitor.py               ventanas, deriva y puerta
 servicio_core.py         carga del bundle, integridad y contratos de respuesta
 servicio.py              endpoints FastAPI y formulario
@@ -213,3 +231,14 @@ separado en `docs/historico/`; no interviene en la ejecución del prototipo.
 
 Las versiones de `artifacts/registro/` son inmutables. Los entornos `.venv*` y los
 cachés `__pycache__/` son locales y regenerables; no forman parte del entregable.
+
+## Estado de la segunda verificación multiplataforma
+
+| Plataforma | Verificación realizada | Resultado / alcance |
+|---|---|---|
+| **macOS arm64** | Copia limpia en una ruta con espacios; `setup.sh` ejecutado dos veces; datos, pruebas y humo; `arrancar.sh` y consultas HTTP reales | Python 3.13.14, 140 paquetes y `uv pip check` correctos. `PRUEBAS: OK`, `HUMO: OK`; ATE e IC, estrato y abstención fuera de soporte correctos con `v0008`. |
+| **Linux arm64 mediante Docker Engine (Colima)** | `docker build`, `docker run`, healthcheck y endpoints HTTP | Imagen construida y contenedor `healthy`; ATE, consulta y abstención correctos. No implica prueba en Windows ni en todas las arquitecturas Linux. |
+| **Docker Compose** | Revisión estática de `docker-compose.yml` | No ejecutado: el plugin Compose no estaba instalado. El healthcheck exige `estado=ok`, integridad válida, puerta `pasa` y versión esperada. |
+| **Windows / PowerShell** | Revisión estática de `setup.ps1`, `arrancar.ps1` y comandos del manual | No ejecutado en Windows nativo ni con PowerShell. Los comandos están escritos para Windows PowerShell 5.1, pero requieren prueba en esa plataforma. |
+
+La segunda auditoría no ejecutó `make demo` ni `make evidencia`, y no modificó el champion ni los artefactos conservados. Además de la falta de pruebas nativas en Windows y Compose, quedan dos límites de reproducibilidad: no hay lockfile transitivo ni digest fijado para la imagen base de Docker. Estas pruebas verifican instalación y contratos del prototipo; no certifican identificación causal ni preparación para exposición pública.

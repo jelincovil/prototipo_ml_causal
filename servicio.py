@@ -48,6 +48,9 @@ def _responder(payload: dict, formato: str):
 def formulario() -> str:
     """Formulario para estimar heterogeneidad en un perfil (una covariable por campo)."""
     campos = nucleo.campos_formulario()
+    aviso = "" if campos else (
+        '<div class="bad">El champion no está disponible o no supera la verificación '
+        'de integridad. El servicio se abstiene; consulta <a href="/salud">/salud</a>.</div>')
     controles = "\n".join(
         f'<label>{html.escape(nombre)}'
         f'<input name="{html.escape(nombre)}" type="number" step="any" '
@@ -62,6 +65,7 @@ def formulario() -> str:
 <p class="sub">Ajusta las covariables (escala del escenario, ~N(0,1)) y pulsa
 <strong>Estimar</strong>. El resultado es una proyección, no un CATE individual
 identificado. Fuera del rango de entrenamiento la respuesta es abstención.</p>
+{aviso}
 <form action="/calcular" method="get">
   <fieldset><legend>{len(campos)} covariables</legend>
     <div class="grid">{controles}</div>

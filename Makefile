@@ -56,7 +56,7 @@ evidencia:          ## comando, salida y hash por cifra del cierre
 	shasum -a 256 evidencia/*.txt evidencia/*.json evidencia/README.md > evidencia/SHA256SUMS
 
 cierre:             ## compila el documento Typst
-	typst compile data_benchmark_causal/causal_benchmark_synthetic/datasets/dataset_y_metodo.typ
+	typst compile data_benchmark_causal/causal_benchmark_synthetic/datasets/manual_sistema_causal.typ
 
 demo: verificar estimar registrar ventanas humo  ## el flujo completo
 

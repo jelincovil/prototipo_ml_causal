@@ -43,7 +43,8 @@ def _lectura(efecto: float, ic: list, *, individual: bool = False,
     if not excluye_cero:
         return ("El intervalo incluye el cero: no hay evidencia de efecto con este "
                 "tamaño de muestra.")
-    return ("El intervalo excluye el cero: efecto positivo estimado bajo los supuestos "
+    signo = "positivo" if ic[0] > 0 else "negativo"
+    return (f"El intervalo excluye el cero: efecto {signo} estimado bajo los supuestos "
             "declarados.")
 
 
@@ -175,34 +176,63 @@ def formatear(payload: dict) -> str:
 
 
 def _cargar() -> dict:
-    """Lee la versión champion (una vez): estimación, tarjeta, manifiesto y monitor."""
+    """Lee el champion una vez; una carga defectuosa fuerza abstención sin caché."""
     # El bundle viaja: el servicio NO lee los CSV, solo los artefactos con hash.
-    if "bundle" not in _cache:
+    if "bundle" in _cache:
+        return _cache["bundle"]
+
+    version = "desconocida"
+    try:
         version = champion()
-        try:
-            integridad_valida = verificar_alias()
-        except (OSError, ValueError, KeyError, TypeError):
-            integridad_valida = False
+        integridad_valida = verificar_alias()
         carpeta = REGISTRO / version
         manifest = json.loads((carpeta / "manifest.json").read_text())
+        estimacion = json.loads((carpeta / "estimacion.json").read_text())
+        tarjeta = json.loads((carpeta / "tarjeta.json").read_text())
+        if not all(isinstance(doc, dict) for doc in (manifest, estimacion, tarjeta)):
+            raise ValueError("el bundle debe contener objetos JSON")
+        for clave in ("estimando", "poblacion"):
+            tarjeta[clave]
+        for clave in ("ate_aipw", "ic_aipw", "unidad", "estimador_principal",
+                      "rangos_covariables", "estratos"):
+            estimacion[clave]
+
         monitor = None
         ruta_monitor = ARTEFACTOS / "monitor_estado.json"
         if ruta_monitor.exists():
             monitor = json.loads(ruta_monitor.read_text())
+            if not isinstance(monitor, dict):
+                raise ValueError("el estado del monitor debe ser un objeto JSON")
             if monitor.get("version") != version:
                 monitor = None
-        _cache["bundle"] = {
+    except Exception:
+        # Frontera de archivos externos: nunca convertir un bundle roto en un 500.
+        # No se cachea este resultado: una restauración puede reintentarse sin reiniciar.
+        return {
             "version": version,
-            "estimacion": json.loads((carpeta / "estimacion.json").read_text()),
-            "tarjeta": json.loads((carpeta / "tarjeta.json").read_text()),
-            "manifest": manifest,
-            "monitor": monitor,
-            "integridad_valida": bool(integridad_valida),
+            "estimacion": {},
+            "tarjeta": {},
+            "manifest": {},
+            "monitor": None,
+            "integridad_valida": False,
+            "motivo_carga": ("no se pudo cargar o validar el bundle champion; "
+                             "no se devuelve ningún número"),
         }
+
+    _cache["bundle"] = {
+        "version": version,
+        "estimacion": estimacion,
+        "tarjeta": tarjeta,
+        "manifest": manifest,
+        "monitor": monitor,
+        "integridad_valida": bool(integridad_valida),
+    }
     return _cache["bundle"]
 
 
 def _estado_puerta(bundle: dict) -> str:
+    if bundle.get("integridad_valida") is not True:
+        return "falla"
     monitor = bundle.get("monitor") or {}
     if monitor.get("estado_puerta"):
         return str(monitor["estado_puerta"])
@@ -214,8 +244,10 @@ def _abstencion_por_puerta(bundle: dict, tipo: str) -> dict | None:
         return {
             "estado": "abstencion",
             "tipo": tipo,
-            "motivo": ("el alias champion o los hashes del bundle no verifican: "
-                       "no se devuelve ningún número"),
+            "motivo": bundle.get(
+                "motivo_carga",
+                "el alias champion o los hashes del bundle no verifican: "
+                "no se devuelve ningún número"),
             "integridad_valida": False,
             "estado_puerta": _estado_puerta(bundle),
             "version": bundle["version"],
@@ -294,8 +326,16 @@ def _placebo_resumen(estimacion: dict) -> dict:
 
 def salud() -> dict:
     b = _cargar()
-    estimacion = b["estimacion"]
     integridad = b.get("integridad_valida", False)
+    if not integridad:
+        return {
+            "estado": "abstencion",
+            "version": b["version"],
+            "estado_puerta": _estado_puerta(b),
+            "integridad_valida": False,
+            "motivo": b.get("motivo_carga", "la integridad del bundle no verifica"),
+        }
+    estimacion = b["estimacion"]
     return {
         "estado": "ok" if integridad else "abstencion",
         "version": b["version"],
@@ -432,7 +472,10 @@ def consulta(perfil: dict) -> dict:
 
 def campos_formulario() -> dict:
     """Covariables del escenario con rango y valor sugerido (para el formulario)."""
-    est = _cargar()["estimacion"]
+    bundle = _cargar()
+    if bundle.get("integridad_valida") is not True:
+        return {}
+    est = bundle["estimacion"]
     campos = {}
     for covariable, (lo, hi) in est["rangos_covariables"].items():
         umbral = est["estratos"]["umbral"]

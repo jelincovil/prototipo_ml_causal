@@ -8,6 +8,11 @@ Cubre los invariantes del servicio del prototipo:
 """
 from __future__ import annotations
 
+import json
+import shutil
+import tempfile
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 import servicio_core as nucleo
@@ -104,6 +109,94 @@ def _probar_integridad_falla() -> bool:
                 and j.get("integridad_valida") is False)
     finally:
         b["integridad_valida"] = original
+
+
+def _probar_archivos_defectuosos() -> bool:
+    """Un bundle incompleto o corrupto cierra todas las salidas sin excepciones.
+
+    Las copias viven en directorios temporales: nunca se mutan los artefactos reales.
+    """
+    bundle_real = nucleo._cargar()
+    artefactos_real = nucleo.ARTEFACTOS
+    registro_real = nucleo.REGISTRO
+    champion_real = nucleo.champion
+    verificar_real = nucleo.verificar_alias
+    cache_real = dict(nucleo._cache)
+    version = bundle_real["version"]
+    origen = registro_real / version
+
+    def champion_temporal() -> str:
+        alias = nucleo.ARTEFACTOS / "alias_champion.json"
+        return json.loads(alias.read_text())["version"]
+
+    resultados = []
+    try:
+        for caso in ("alias_ausente", "json_corrupto",
+                     "manifiesto_ausente", "monitor_corrupto"):
+            try:
+                with tempfile.TemporaryDirectory(prefix=f"sic_humo_{caso}_") as tmp:
+                    base = Path(tmp)
+                    artefactos = base / "artifacts"
+                    registro = artefactos / "registro"
+                    destino = registro / version
+                    destino.mkdir(parents=True)
+                    for nombre in ("estimacion.json", "tarjeta.json", "manifest.json"):
+                        shutil.copyfile(origen / nombre, destino / nombre)
+                    (artefactos / "alias_champion.json").write_text(
+                        json.dumps({"version": version}))
+                    shutil.copyfile(artefactos_real / "monitor_estado.json",
+                                    artefactos / "monitor_estado.json")
+
+                    if caso == "alias_ausente":
+                        (artefactos / "alias_champion.json").unlink()
+                    elif caso == "json_corrupto":
+                        (destino / "estimacion.json").write_text("{")
+                    elif caso == "manifiesto_ausente":
+                        (destino / "manifest.json").unlink()
+                    else:
+                        (artefactos / "monitor_estado.json").write_text("{")
+
+                    nucleo.ARTEFACTOS = artefactos
+                    nucleo.REGISTRO = registro
+                    nucleo.champion = champion_temporal
+                    nucleo.verificar_alias = lambda: True
+                    nucleo._cache.clear()
+
+                    respuestas = [
+                        c.get("/salud"),
+                        c.get("/efecto"),
+                        c.post("/consulta", json={}),
+                        c.post("/heterogeneidad", json={}),
+                    ]
+                    sin_numeros = all(
+                        r.status_code == 200
+                        and r.json().get("estado") == "abstencion"
+                        and "efecto" not in r.json()
+                        and "proyeccion" not in r.json()
+                        and r.json().get("estado_puerta") == "falla"
+                        for r in respuestas)
+                    salud = respuestas[0].json()
+                    raiz = c.get("/")
+                    caso_ok = (sin_numeros
+                               and salud.get("integridad_valida") is False
+                               and raiz.status_code == 200
+                               and "champion no está disponible" in raiz.text)
+                    resultados.append(caso_ok)
+                    print(f"carga defectuosa ({caso}): "
+                          f"{'abstención fail-closed OK' if caso_ok else 'FALLÓ'}")
+            except Exception as exc:
+                resultados.append(False)
+                print(f"carga defectuosa ({caso}): EXCEPCIÓN {type(exc).__name__}: {exc}")
+            finally:
+                nucleo._cache.clear()
+    finally:
+        nucleo.ARTEFACTOS = artefactos_real
+        nucleo.REGISTRO = registro_real
+        nucleo.champion = champion_real
+        nucleo.verificar_alias = verificar_real
+        nucleo._cache.clear()
+        nucleo._cache.update(cache_real)
+    return all(resultados)
 
 
 def main() -> int:
@@ -225,6 +318,16 @@ def main() -> int:
     ok &= (r11.status_code == 200 and "<form" in r11.text and "Estimar" in r11.text
            and "POST /heterogeneidad" in r11.text)
     print(f"/ (formulario): {r11.status_code} — {r11.text.count('<input')} campos")
+
+    lectura_negativa = nucleo._lectura(-2.0, [-3.0, -1.0])
+    ok &= "negativo" in lectura_negativa and "positivo" not in lectura_negativa
+    print("lectura de IC negativo: OK" if "negativo" in lectura_negativa
+          else "lectura de IC negativo: FALLÓ")
+
+    carga_ok = _probar_archivos_defectuosos()
+    ok &= carga_ok
+    print("archivos ausentes/corruptos: fail-closed OK" if carga_ok
+          else "archivos ausentes/corruptos: FALLÓ")
 
     r12 = c.get("/calcular", params=dentro)
     ok &= (r12.status_code == 200

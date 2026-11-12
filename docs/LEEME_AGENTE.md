@@ -17,7 +17,7 @@ IHDP y a un DGP ilustrativo propio: no revalida jobs, Docker ni los documentos.
 | 1 | `docs/pregunta_jobs.md` · `docs/pregunta_ihdp.md` | qué se estima y bajo qué supuestos |
 | 2 | `GUIA_CONSTRUCCION.md` | cómo está construido, bloque a bloque, con salidas esperadas |
 | 3 | `BITACORA.md` | qué se decidió, por qué y con qué evidencia histórica |
-| 4 | `data_benchmark_causal/.../datasets/dataset_y_metodo.typ` (o el `.pdf`) | ficha del dataset, del efecto y del método |
+| 4 | `data_benchmark_causal/.../datasets/manual_sistema_causal.typ` (o el `.pdf`) | manual de instalación, datos, método, API e interpretación |
 | 5 | `datos.py` → `estimacion.py` → `registro.py` → `monitor.py` → `servicio_core.py` | el código, en el orden en que fluyen los datos |
 
 `ENTREGA.md` describe el checklist del trabajo académico. Las instrucciones de

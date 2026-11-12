@@ -33,13 +33,18 @@ if ($null -eq $uv) {
 & $uv python install 3.13
 if ($LASTEXITCODE -ne 0) { throw "No se pudo instalar Python 3.13 con uv." }
 
-& $uv venv --python 3.13 --allow-existing .venv
-if ($LASTEXITCODE -ne 0) { throw "No se pudo crear o reutilizar .venv." }
+& $uv venv --python 3.13 --clear .venv
+if ($LASTEXITCODE -ne 0) { throw "No se pudo crear o recrear .venv." }
 
 $python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
 $requirements = Join-Path $PSScriptRoot "requirements.txt"
 & $uv pip install --python $python -r $requirements
 if ($LASTEXITCODE -ne 0) { throw "No se pudieron instalar las dependencias." }
+
+& $uv pip check --python $python
+if ($LASTEXITCODE -ne 0) { throw "Las dependencias instaladas no son coherentes." }
+& $python --version
+if ($LASTEXITCODE -ne 0) { throw "El intérprete de .venv no responde." }
 
 Write-Host ""
 Write-Host "Instalación lista. Ejecuta: powershell -ExecutionPolicy Bypass -File arrancar.ps1"

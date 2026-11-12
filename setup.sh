@@ -23,8 +23,10 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 uv python install 3.13
-uv venv --python 3.13 --allow-existing .venv
+uv venv --python 3.13 --clear .venv
 uv pip install --python "$ROOT_DIR/.venv/bin/python" -r "$ROOT_DIR/requirements.txt"
+uv pip check --python "$ROOT_DIR/.venv/bin/python"
+"$ROOT_DIR/.venv/bin/python" --version
 
 printf '\nInstalación lista. Ejecuta: bash arrancar.sh\n'
 printf 'URL: http://127.0.0.1:8000\n'
