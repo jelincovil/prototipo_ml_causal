@@ -1,0 +1,21 @@
+PROYECTO «PUENTE» — SEMANA 4 (paquete del estudiante)
+=====================================================
+
+Este paquete es autocontenido: trae el proyecto y los dos escenarios de
+datos (real/jobs y real/ihdp). No necesita nada más del repositorio.
+
+Pasos:
+
+1. Descomprime el zip donde quieras (cualquier carpeta sirve).
+2. Dentro de la carpeta semana_4_proyecto:
+
+     python -m pip install -r requirements.txt
+     jupyter lab proyecto.ipynb        # o: jupyter notebook proyecto.ipynb
+
+3. El arranque correcto: `make verificar` FALLA con TODO-1. Así se empieza.
+   (¿Sin make? Los objetivos son: python3 datos.py, python3 estimacion.py,
+    python3 registro.py, python3 monitor.py, python3 humo.py.)
+
+4. Lee docs/pregunta_jobs.md antes de escribir código (desde la raíz del proyecto).
+
+La entrega está descrita en ENTREGA.md.

@@ -1,4 +1,4 @@
-ventanas de producción (contra champion = v0004, umbrales de la tarjeta: {'smd_max': 0.5, 'smd_ponderado_max': 0.25, 'psi_alerta': 0.25, 'solape_min': 0.3, 'efecto_estabilidad': 0.2})
+ventanas de producción (contra champion = v0008, umbrales de la tarjeta: {'smd_max': 0.5, 'smd_ponderado_max': 0.25, 'psi_alerta': 0.25, 'solape_min': 0.3, 'efecto_estabilidad': 0.2})
 
 [sana           ] estado = pasa   | acción: continuar
                   n=300 | PSI máx = 0.024 | SMD máx = 0.33 | SMD pond. = 0.07 | ESS/n = 0.8 | solape = 100%
@@ -24,6 +24,9 @@ ventanas de producción (contra champion = v0004, umbrales de la tarjeta: {'smd_
                   n=448 | PSI máx = 0.0 | SMD máx = 0.24 | SMD pond. = 0.03 | ESS/n = 0.92 | solape = 100%
                   ATE ventana = 1.0 | ATE champion = 5.16 | diff = 4.16 (umbral 1.25)
                   - estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)
+
+sensibilidad de umbrales ±20 %: 0 cambios de acción fuera de la clasificación base
+son convenciones iniciales, no umbrales calibrados universalmente
 
 puerta de producción (sana): pasa (continuar)
 peor acción entre ventanas de estrés: abstenerse (falla)

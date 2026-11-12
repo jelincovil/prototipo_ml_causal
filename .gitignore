@@ -6,6 +6,9 @@ __pycache__/
 .venv_ci/
 .venv_dowhy_test/
 _scratch_ihdp/
+.tmp_notebook/
+.ipynb_checkpoints/
+temp_causal_env/
 **/target/
 *.zip
 *.zip.sha256

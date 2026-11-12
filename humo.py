@@ -1,9 +1,10 @@
 """humo.py — Prueba de humo del servicio (TestClient, sin levantar puerto).
 
-Cubre los tres invariantes del servicio del prototipo:
+Cubre los invariantes del servicio del prototipo:
   1. /efecto devuelve efecto + IC + versión (el bundle viaja).
-  2. /consulta fuera del soporte se abstiene SIN ningún número.
-  3. Dos llamadas idénticas devuelven exactamente lo mismo.
+  2. /heterogeneidad devuelve una proyección, nunca un CATE individual identificado.
+  3. Fuera del soporte o con puerta fallida se abstiene SIN estimación numérica.
+  4. Dos llamadas idénticas devuelven exactamente lo mismo.
 """
 from __future__ import annotations
 
@@ -15,8 +16,8 @@ from rutas import ESCENARIO
 
 c = TestClient(app)
 
-# Perfil dentro del soporte de real/jobs (el del kit). Para otros escenarios se
-# construye desde los rangos del bundle: el humo no lee CSV.
+# Perfil dentro del soporte de synthetic/jobs (el del kit). Para otros escenarios
+# se construye desde los rangos del bundle: el humo no lee CSV.
 PERFIL_JOBS = {"age": 30, "educ": 10, "black": 1, "hispan": 0,
                "married": 0, "nodegree": 1, "re74": 2000, "re75": 1500}
 PERFIL_JOBS_FUERA = dict(PERFIL_JOBS, age=99)
@@ -36,33 +37,89 @@ def _perfil_desde_bundle(fuera: bool) -> dict:
 
 
 def perfiles() -> tuple[dict, dict]:
-    if ESCENARIO == "real/jobs":
+    if ESCENARIO == "synthetic/jobs":
         return PERFIL_JOBS, PERFIL_JOBS_FUERA
     return _perfil_desde_bundle(False), _perfil_desde_bundle(True)
 
 
+def _diagnosticos_ok(j: dict) -> bool:
+    pos = j.get("diagnosticos_positividad")
+    comp = j.get("comparacion_estimadores")
+    return (isinstance(pos, dict)
+            and all(k in pos for k in
+                    ("tratados", "controles", "recorte", "ess", "ess_sobre_n"))
+            and all(isinstance(pos.get(k), dict) for k in ("tratados", "controles"))
+            and isinstance(comp, dict)
+            and all(k in comp for k in ("ingenuo", "ols_ajustado", "aipw")))
+
+
+def _heterogeneidad_ok(j: dict) -> bool:
+    texto = str(j).lower()
+    texto_sin_negacion = texto.replace("no es un cate individual identificado", "")
+    estimando = j.get("estimando", "").lower()
+    return (j.get("estado") == "respuesta"
+            and j.get("tipo") == "heterogeneidad_estimada"
+            and "proyeccion" in j and "efecto" not in j
+            and len(j.get("ic95", [])) == 2
+            and "heterogeneidad" in estimando and "proyección" in estimando
+            and "no es un cate individual identificado" in texto
+            and "cate individual identificado" not in texto_sin_negacion
+            and "efecto individual identificado" not in texto_sin_negacion
+            and "efecto causal individual identificado" not in texto_sin_negacion
+            and bool(j.get("advertencias")))
+
+
+def _abstencion_heterogeneidad_ok(j: dict) -> bool:
+    return (j.get("estado") == "abstencion"
+            and j.get("tipo") == "heterogeneidad_estimada"
+            and "proyeccion" not in j and "efecto" not in j
+            and bool(j.get("advertencias")))
+
+
 def _probar_puerta_falla() -> bool:
-    """Fuerza temporalmente la puerta a 'falla' y verifica abstención sin número."""
+    """Fuerza la puerta a 'falla' y exige abstención para ATE y heterogeneidad."""
     b = nucleo._cargar()
     original_manifest = b.get("manifest", {}).get("puerta")
     original_monitor = b.get("monitor")
     b["manifest"]["puerta"] = "falla"
     b["monitor"] = None
     try:
-        j = nucleo.efecto()
-        return j.get("estado") == "abstencion" and "efecto" not in j
+        ate = nucleo.efecto()
+        hetero = nucleo.heterogeneidad({})
+        return (ate.get("estado") == "abstencion" and "efecto" not in ate
+                and _abstencion_heterogeneidad_ok(hetero))
     finally:
         b["manifest"]["puerta"] = original_manifest
         b["monitor"] = original_monitor
 
 
+def _probar_integridad_falla() -> bool:
+    """Simula un bundle no verificado y exige abstención sin número."""
+    b = nucleo._cargar()
+    original = b.get("integridad_valida")
+    b["integridad_valida"] = False
+    try:
+        j = nucleo.efecto()
+        return (j.get("estado") == "abstencion" and "efecto" not in j
+                and j.get("integridad_valida") is False)
+    finally:
+        b["integridad_valida"] = original
+
+
 def main() -> int:
     ok = True
+    ok &= nucleo.efecto_lista_de_prueba() == [
+        "/salud", "/efecto", "/consulta", "/heterogeneidad", "/efecto_individual"]
 
     r = c.get("/salud")
     js = r.json()
     ok &= r.status_code == 200 and js["estado"] == "ok"
-    ok &= "estado_puerta" in js
+    ok &= "estado_puerta" in js and js.get("integridad_valida") is True
+    ok &= (js.get("identificacion", {}).get("criterio") == "backdoor"
+           and js.get("identificacion", {}).get("pasa") is True)
+    ok &= (js.get("sensibilidad", {}).get("cotas_manski_ate") is not None
+           and js.get("placebo", {}).get("pasa") is True)
+    ok &= _diagnosticos_ok(js)
     print(f"/salud: {r.status_code} {js}")
 
     r = c.get("/efecto")
@@ -71,7 +128,13 @@ def main() -> int:
     ok &= ("estado_puerta" in j and "sensibilidad" in j and "placebo" in j
            and "identificacion" in j
            and "e_value" in j.get("sensibilidad", {})
-           and "tratamiento_permutado" in j.get("placebo", {}))
+           and bool(j.get("sensibilidad", {}).get("e_value", {}).get("limites"))
+           and "cotas_manski" in j.get("sensibilidad", {})
+           and "tratamiento_permutado" in j.get("placebo", {})
+           and j.get("placebo", {}).get("pasa") is True
+           and j.get("identificacion", {}).get("identificacion_pasa") is True
+           and j.get("integridad_valida") is True)
+    ok &= _diagnosticos_ok(j)
     print(f"/efecto: {r.status_code} efecto={j['efecto']} ic95={j['ic95']} "
           f"version={j['version']} puerta={j.get('estado_puerta')}")
 
@@ -95,41 +158,78 @@ def main() -> int:
     ok &= r3.json() == j1
     print(f"determinismo: dos llamadas idénticas -> {'iguales' if r3.json() == j1 else 'DISTINTAS'}")
 
-    r4 = c.post("/efecto_individual", json=dentro)
+    r4 = c.post("/heterogeneidad", json=dentro)
     j4 = r4.json()
-    ok &= r4.status_code == 200 and j4.get("estado") == "respuesta" and "efecto" in j4
+    ok &= r4.status_code == 200 and _heterogeneidad_ok(j4)
     ok &= (j4.get("estado_puerta") is not None
            and j4.get("sensibilidad", {}).get("aplicable") is False)
-    print(f"/efecto_individual dentro: {r4.status_code} estado={j4.get('estado')} "
-          f"efecto={j4.get('efecto')} ic95={j4.get('ic95')} r2={j4.get('ajuste_r2')}")
+    print(f"/heterogeneidad dentro: {r4.status_code} estado={j4.get('estado')} "
+          f"proyeccion={j4.get('proyeccion')} ic95={j4.get('ic95')} "
+          f"r2={j4.get('ajuste_r2')}")
 
-    r5 = c.post("/efecto_individual", json=fuera)
+    r5 = c.post("/efecto_individual", json=dentro)
     j5 = r5.json()
-    ok &= (r5.status_code == 200 and j5.get("estado") == "abstencion"
-           and "efecto" not in j5)
-    print(f"/efecto_individual fuera ({cambiada}={fuera[cambiada]:g}): "
-          f"{r5.status_code} estado={j5.get('estado')} (sin número)")
+    nucleo_alias = {k: v for k, v in j5.items()
+                    if k not in ("deprecacion", "endpoint_recomendado")}
+    ok &= r5.status_code == 200 and _heterogeneidad_ok(j5)
+    ok &= (nucleo_alias == j4 and bool(j5.get("deprecacion"))
+           and j5.get("endpoint_recomendado") == "/heterogeneidad")
+    print(f"/efecto_individual (alias): {r5.status_code} tipo={j5.get('tipo')} "
+          f"deprecacion={j5.get('deprecacion')}")
 
-    r6 = c.get("/efecto?formato=texto")
-    ok &= (r6.status_code == 200 and "IC 95" in r6.text
-           and "Sensibilidad" in r6.text and "Placebo" in r6.text
-           and r6.headers["content-type"].startswith("text/plain"))
-    print(f"/efecto?formato=texto: {r6.status_code} "
-          f"({len(r6.text.splitlines())} líneas) — lecturas legibles OK")
-    ok &= _probar_puerta_falla()
-    print("puerta falla: abstención sin número OK" if ok else "puerta falla: FALLÓ")
+    r6 = c.post("/heterogeneidad", json=fuera)
+    j6 = r6.json()
+    ok &= r6.status_code == 200 and _abstencion_heterogeneidad_ok(j6)
+    print(f"/heterogeneidad fuera ({cambiada}={fuera[cambiada]:g}): "
+          f"{r6.status_code} estado={j6.get('estado')} (sin proyección)")
 
-    r7 = c.post("/efecto_individual?formato=texto", json=dentro)
-    ok &= (r7.status_code == 200 and "EFECTO PARA UN PERFIL" in r7.text)
-    print(f"/efecto_individual?formato=texto: {r7.status_code} encabezado OK")
+    r7 = c.post("/efecto_individual", json=fuera)
+    j7 = r7.json()
+    ok &= (r7.status_code == 200 and _abstencion_heterogeneidad_ok(j7)
+           and bool(j7.get("deprecacion"))
+           and j7.get("endpoint_recomendado") == "/heterogeneidad")
+    print(f"/efecto_individual fuera (alias): {r7.status_code} "
+          f"estado={j7.get('estado')} (sin proyección)")
 
-    r8 = c.get("/")
-    ok &= r8.status_code == 200 and "<form" in r8.text and "Estimar" in r8.text
-    print(f"/ (formulario): {r8.status_code} — {r8.text.count('<input')} campos")
+    r8 = c.get("/efecto?formato=texto")
+    ok &= (r8.status_code == 200 and "IC 95" in r8.text
+           and "Sensibilidad" in r8.text and "Placebo" in r8.text
+           and "Manski" in r8.text and "criterio backdoor: pasa" in r8.text
+           and "D permutado: pasa" in r8.text and "Y permutado: pasa" in r8.text
+           and r8.headers["content-type"].startswith("text/plain"))
+    print(f"/efecto?formato=texto: {r8.status_code} "
+          f"({len(r8.text.splitlines())} líneas) — lecturas legibles OK")
 
-    r9 = c.get("/calcular", params={k: v for k, v in dentro.items()})
-    ok &= r9.status_code == 200 and "EFECTO PARA UN PERFIL" in r9.text
-    print(f"/calcular: {r9.status_code} informe generado")
+    puerta_ok = _probar_puerta_falla()
+    ok &= puerta_ok
+    print("puerta falla: ATE y heterogeneidad se abstienen sin estimación OK"
+          if puerta_ok else "puerta falla: FALLÓ")
+    integridad_ok = _probar_integridad_falla()
+    ok &= integridad_ok
+    print("integridad rota: abstención sin número OK" if integridad_ok
+          else "integridad rota: FALLÓ")
+
+    r9 = c.post("/heterogeneidad?formato=texto", json=dentro)
+    ok &= (r9.status_code == 200
+           and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r9.text
+           and "Proyección" in r9.text and "Advertencias" in r9.text)
+    print(f"/heterogeneidad?formato=texto: {r9.status_code} encabezado OK")
+
+    r10 = c.post("/efecto_individual?formato=texto", json=dentro)
+    ok &= (r10.status_code == 200
+           and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r10.text
+           and "Deprecación" in r10.text and "/heterogeneidad" in r10.text)
+    print(f"/efecto_individual?formato=texto: {r10.status_code} alias deprecado OK")
+
+    r11 = c.get("/")
+    ok &= (r11.status_code == 200 and "<form" in r11.text and "Estimar" in r11.text
+           and "POST /heterogeneidad" in r11.text)
+    print(f"/ (formulario): {r11.status_code} — {r11.text.count('<input')} campos")
+
+    r12 = c.get("/calcular", params=dentro)
+    ok &= (r12.status_code == 200
+           and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r12.text)
+    print(f"/calcular: {r12.status_code} informe de heterogeneidad generado")
 
     print("\nHUMO:", "OK" if ok else "FALLÓ")
     return 0 if ok else 1

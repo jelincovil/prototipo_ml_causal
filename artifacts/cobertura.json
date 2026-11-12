@@ -1,0 +1,80 @@
+{
+  "metadatos": {
+    "dgp": {
+      "nombre": "ilustrativo_propio_logistico_lineal_6x",
+      "covariables": "X1,...,X6 iid N(0,1), independientes entre sí",
+      "tratamiento": "D|X ~ Bernoulli(expit(-0.20 + 0.70*x1 - 0.50*x2 + 0.40*x3 + 0.30*x4 - 0.20*x5 + 0.15*x6))",
+      "resultado": "Y = 1 + 0.90*x1 - 0.70*x2 + 0.50*x3 + 0.40*x4 - 0.30*x5 + 0.20*x6 + 2.0*D + epsilon; epsilon iid N(0,1)",
+      "confusion": "Las seis X afectan conjuntamente a D e Y y están observadas; no hay confusión no observada por construcción.",
+      "asignacion_moderada": "Coeficientes logísticos moderados para favorecer solapamiento; las muestras degeneradas producen un error explícito, no se omiten.",
+      "origen": "DGP ilustrativo propio; no es Hill/IHDP ni usa datos del benchmark"
+    },
+    "verdad": {
+      "parametro": "ATE poblacional E[Y(1)-Y(0)]",
+      "valor": 2.0,
+      "naturaleza": "Conocida exactamente por construcción: Y(1)-Y(0)=2.0 para cada unidad; no se estima a partir de un benchmark.",
+      "formula": "ATE = E[2.0] = 2.0"
+    },
+    "semilla": 20261111,
+    "n": 500,
+    "repeticiones": 100,
+    "K": 5,
+    "nominal": 0.95,
+    "z_ic95": 1.96,
+    "semillas_independientes": "Flujos NumPy derivados de SeedSequence([semilla, 0]) para datos y SeedSequence([semilla, 1]) para los pliegues de AIPW.",
+    "ingenuo_se_ic": "SE de Welch sqrt(s1^2/n1 + s0^2/n0); IC95 = ATE +/- 1.96*SE",
+    "ols_se_ic": "SE e IC devueltos por ate_ols: IC95 = ATE +/- 1.96*SE",
+    "aipw_se_ic": "SE e IC devueltos por aipw_crossfit con K=5 y su trimming declarado; IC95 = ATE +/- 1.96*SE"
+  },
+  "estimadores": {
+    "aipw": {
+      "n_repeticiones": 100,
+      "cobertura_ic95": 0.97,
+      "error_monte_carlo": 0.017058722109231986,
+      "sesgo": -0.0002653905879895957,
+      "rmse": 0.11366262825164142,
+      "longitud_media_ic": 0.44239321869283027
+    },
+    "ols_ajustado": {
+      "n_repeticiones": 100,
+      "cobertura_ic95": 0.96,
+      "error_monte_carlo": 0.019595917942265433,
+      "sesgo": -0.00033803162632236374,
+      "rmse": 0.09781571646985485,
+      "longitud_media_ic": 0.38930194446128125
+    },
+    "ingenuo": {
+      "n_repeticiones": 100,
+      "cobertura_ic95": 0.0,
+      "error_monte_carlo": 0.0,
+      "sesgo": 1.1613227064820846,
+      "rmse": 1.168199596802634,
+      "longitud_media_ic": 0.554932919485122
+    }
+  },
+  "resumen": {
+    "nominal": 0.95,
+    "comparacion_cobertura": {
+      "aipw": {
+        "cobertura_ic95": 0.97,
+        "diferencia_vs_nominal": 0.020000000000000018,
+        "error_monte_carlo": 0.017058722109231986,
+        "dentro_de_mas_menos_1_error_mc": false
+      },
+      "ols_ajustado": {
+        "cobertura_ic95": 0.96,
+        "diferencia_vs_nominal": 0.010000000000000009,
+        "error_monte_carlo": 0.019595917942265433,
+        "dentro_de_mas_menos_1_error_mc": true
+      },
+      "ingenuo": {
+        "cobertura_ic95": 0.0,
+        "diferencia_vs_nominal": -0.95,
+        "error_monte_carlo": 0.0,
+        "dentro_de_mas_menos_1_error_mc": false
+      }
+    },
+    "interpretacion": "La diferencia cobertura-nominal debe leerse junto con el error Monte Carlo sqrt(p(1-p)/R); una coincidencia aproximada con 0.95 en esta simulación no es una garantía general de cobertura.",
+    "advertencia": "La cobertura solo aplica a este DGP ilustrativo propio. No demuestra identificación, ausencia de confusión, positividad ni calibración de IC en los escenarios IHDP/jobs ni en datos reales."
+  }
+}

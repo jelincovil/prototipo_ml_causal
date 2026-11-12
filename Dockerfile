@@ -1,8 +1,9 @@
 # Imagen del prototipo: el bundle viaja (registro + artefactos), los datos no.
 FROM python:3.13-slim
 WORKDIR /app
-RUN pip install --no-cache-dir numpy scipy fastapi "uvicorn[standard]"
-COPY servicio.py servicio_core.py registro.py rutas.py /app/
+# El servicio consume JSON: no necesita DoWhy, pandas ni deserializar pickle/joblib.
+RUN pip install --no-cache-dir numpy==2.4.2 scipy==1.17.0 fastapi==0.135.3 uvicorn==0.44.0
+COPY servicio.py servicio_core.py registro.py rutas.py sensibilidad.py /app/
 COPY artifacts /app/artifacts
 RUN chmod -R a+rX /app
 RUN useradd --create-home --uid 10001 app

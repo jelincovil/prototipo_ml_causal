@@ -24,5 +24,5 @@
   "what_is_synthetic": "ALL numerical data: demographics ~U(18,55)/U(5,17), income ~N(5000,3000), outcomes from linear formulas with ATE forced to ~1800",
   "note": "SYNTHETIC DATA. No actual NSW or CPS participant data is included.",
   "schema_version": "1.0-stage2",
-  "scenario_id": "real_jobs"
+  "scenario_id": "synthetic_jobs"
 }

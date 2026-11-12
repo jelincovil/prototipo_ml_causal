@@ -13,21 +13,21 @@ from scipy.optimize import minimize
 
 from datos import EsquemaCausal, leer
 from rutas import ARTEFACTOS, DATOS, ESCENARIO
-from sensibilidad import (control_negativo, placebo_permutacion,
-                          resumen_sensibilidad)
+from sensibilidad import (control_negativo, cotas_manski,
+                          placebo_permutacion, resumen_sensibilidad)
 
 SEMILLA = 4242
 
 # Corte de heterogeneidad por escenario: se declara ANTES de mirar los efectos.
 CORTES = {
-    "real/jobs": {
+    "synthetic/jobs": {
         "variable": "nodegree", "umbral": 0.5,
         "etiquetas": {"1": "sin título", "0": "con título"},
         "regla": ("corte único por nodegree (título): criterio administrativo y de "
                   "interpretabilidad, declarado antes de mirar los efectos; "
                   "NO elegido por ganancia de varianza"),
     },
-    "real/ihdp": {
+    "synthetic/ihdp": {
         "variable": "bw", "umbral": None,  # None -> mediana de la muestra de train
         "etiquetas": {"1": "bw alto (> mediana de train)",
                       "0": "bw bajo (<= mediana de train)"},
@@ -38,12 +38,13 @@ CORTES = {
     },
 }
 
-UNIDAD = {"real/jobs": "USD de 1978", "real/ihdp": "puntos de test cognitivo"}
-ETIQUETA_UNIDAD = {"real/jobs": "USD", "real/ihdp": "puntos"}
+UNIDAD = {"synthetic/jobs": "USD de 1978",
+          "synthetic/ihdp": "puntos de test cognitivo"}
+ETIQUETA_UNIDAD = {"synthetic/jobs": "USD", "synthetic/ihdp": "puntos"}
 # La trampa se escala con la unidad del resultado (no tiene sentido en puntos).
-RUIDO_TRAMPA = {"real/jobs": 500.0, "real/ihdp": 1.0}
+RUIDO_TRAMPA = {"synthetic/jobs": 500.0, "synthetic/ihdp": 1.0}
 # Covariable pre-tratamiento que se permuta como placebo de resultado.
-VARIABLE_PLACEBO = {"real/jobs": "educ", "real/ihdp": "momage"}
+VARIABLE_PLACEBO = {"synthetic/jobs": "educ", "synthetic/ihdp": "momage"}
 
 
 def ate_ols(col: dict, esquema: EsquemaCausal, extra=None,
@@ -91,6 +92,65 @@ def ess_kish(D: np.ndarray, e: np.ndarray) -> float:
     e = np.clip(e, 1e-6, 1 - 1e-6)
     w = np.where(D == 1, 1 / e, 1 / (1 - e))
     return float(w.sum() ** 2 / np.sum(w ** 2))
+
+
+def diagnosticos_positividad(e: np.ndarray, D: np.ndarray) -> dict:
+    """Resume las propensiones fuera de pliegue antes del trimming.
+
+    Los cuantiles y el porcentaje recortado describen el soporte observado; no
+    demuestran positividad poblacional ni solapamiento multivariable.
+    """
+    e = np.asarray(e, dtype=float).reshape(-1)
+    D = np.asarray(D, dtype=float).reshape(-1)
+    if e.size == 0 or e.size != D.size:
+        raise ValueError("e y D deben tener el mismo tamaño, mayor que cero")
+    if not np.all(np.isfinite(e)) or not np.all(np.isfinite(D)):
+        raise ValueError("e y D deben ser finitos")
+    if np.any((e < 0.0) | (e > 1.0)):
+        raise ValueError("las propensiones deben estar en [0, 1]")
+    if not np.all(np.isin(D, [0.0, 1.0])):
+        raise ValueError("D debe ser binario (0/1)")
+
+    def resumen(valores: np.ndarray) -> dict:
+        n = int(valores.size)
+        if n == 0:
+            return {"n": 0, "min": None, "p05": None, "p25": None,
+                    "mediana": None, "p75": None, "p95": None, "max": None,
+                    "recortado_n": 0, "recortado_pct": 0.0}
+        q05, q25, q50, q75, q95 = np.quantile(
+            valores, [0.05, 0.25, 0.50, 0.75, 0.95])
+        recortado = int(np.sum((valores < 0.05) | (valores > 0.95)))
+        return {
+            "n": n,
+            "min": float(valores.min()), "p05": float(q05),
+            "p25": float(q25), "mediana": float(q50),
+            "p75": float(q75), "p95": float(q95),
+            "max": float(valores.max()),
+            "recortado_n": recortado,
+            "recortado_pct": float(100.0 * recortado / n),
+        }
+
+    total = resumen(e)
+    ess = ess_kish(D, np.clip(e, 0.05, 0.95))
+    total["ess"] = ess
+    total["ess_sobre_n"] = float(ess / len(D))
+    return {
+        "fuente": "propensiones fuera de pliegue, antes del trimming",
+        "recorte": [0.05, 0.95],
+        "rango": [float(e.min()), float(e.max())],
+        "fraccion_solapamiento": float(
+            np.mean((e >= 0.05) & (e <= 0.95))),
+        "total": total,
+        "tratados": resumen(e[D == 1]),
+        "controles": resumen(e[D == 0]),
+        "ess": ess,
+        "ess_sobre_n": float(ess / len(D)),
+        "advertencia": (
+            "El recorte limita pesos extremos, pero no garantiza positividad "
+            "poblacional ni solapamiento multivariable; los rangos marginales "
+            "del servicio tampoco descartan extrapolación conjunta."
+        ),
+    }
 
 
 def smd(v: np.ndarray, D: np.ndarray) -> float:
@@ -172,12 +232,15 @@ def aipw_crossfit(col: dict, esquema: EsquemaCausal, k: int = 5,
         mu1[dentro], mu0[dentro] = Xf @ b1, Xf @ b0
         e[dentro] = _propensity_fit(X[fuera], D[fuera])(X[dentro])
 
+    positividad = diagnosticos_positividad(e, D)
+    propensiones_oof = e.copy()
     e = np.clip(e, 0.05, 0.95)  # trimming declarado en la tarjeta
     score = (mu1 - mu0 + D * (Y - mu1) / e - (1 - D) * (Y - mu0) / (1 - e))
     ate = float(score.mean())
     se = float(score.std(ddof=1) / np.sqrt(n))
     return {"ate": ate, "se": se, "ic": [ate - 1.96 * se, ate + 1.96 * se],
-            "scores": score}
+            "scores": score, "propensiones_oof": propensiones_oof,
+            "diagnosticos_positividad": positividad}
 
 
 def estratos_heterogeneidad(score: np.ndarray, col: dict,
@@ -313,6 +376,9 @@ def identificacion_dowhy(col: dict, esquema: EsquemaCausal) -> dict:
     except ImportError as exc:
         return {
             "aplicable": False,
+            "criterio_principal": "backdoor",
+            "criterio_backdoor_pasa": False,
+            "identificacion_pasa": False,
             "motivo": f"dependencias ausentes: {exc}",
             "grafo_dot": grafo_dot,
             "aristas": aristas,
@@ -332,6 +398,9 @@ def identificacion_dowhy(col: dict, esquema: EsquemaCausal) -> dict:
     except Exception as exc:
         return {
             "aplicable": False,
+            "criterio_principal": "backdoor",
+            "criterio_backdoor_pasa": False,
+            "identificacion_pasa": False,
             "motivo": str(exc),
             "grafo_dot": grafo_dot,
             "aristas": aristas,
@@ -350,6 +419,9 @@ def identificacion_dowhy(col: dict, esquema: EsquemaCausal) -> dict:
 
     return {
         "aplicable": True,
+        "criterio_principal": "backdoor",
+        "criterio_backdoor_pasa": len(conjunto) > 0,
+        "identificacion_pasa": len(conjunto) > 0 and coincide,
         "metodos_dowhy": {
             "conjunto_backdoor": "default",
             "expresion_estimando": "id-algorithm",
@@ -396,14 +468,17 @@ def estimar() -> dict:
     X = np.column_stack([col[c] for c in esquema.covariables])
 
     crude = float(Y[D == 1].mean() - Y[D == 0].mean())
+    se_crude = float(math.sqrt(Y[D == 1].var(ddof=1) / int(D.sum())
+                              + Y[D == 0].var(ddof=1) / int((1 - D).sum())))
+    ic_crude = [crude - 1.96 * se_crude, crude + 1.96 * se_crude]
     ajustado = ate_ols(col, esquema)
     trampa = trampa_score_post(col, esquema)
     aipw = aipw_crossfit(col, esquema)
     estratos = estratos_heterogeneidad(aipw["scores"], col, esquema)
     individual = modelo_individual(aipw["scores"], col, esquema)
 
-    e = propensity(X, D)
-    solape = float(((e >= 0.05) & (e <= 0.95)).mean())
+    e = aipw["propensiones_oof"]
+    positividad = aipw["diagnosticos_positividad"]
     smds = {c: smd(col[c], D) for c in esquema.covariables}
     smds_w = {c: smd_ponderado(col[c], D, e) for c in esquema.covariables}
     smd_w_max = max((abs(v) for v in smds_w.values() if np.isfinite(v)),
@@ -411,6 +486,7 @@ def estimar() -> dict:
 
     sd_y = float(Y.std(ddof=1))
     sens = resumen_sensibilidad(aipw["ate"], aipw["ic"], sd_y, ajustado)
+    sens["cotas_manski"] = cotas_manski(Y, D)
     placebo_d = placebo_permutacion(col, esquema, aipw_crossfit, n_rep=200,
                                     semilla=SEMILLA)
     placebo_y = control_negativo(col, esquema, aipw_crossfit,
@@ -418,6 +494,16 @@ def estimar() -> dict:
                                  semilla=SEMILLA)
     validacion = validacion_particiones(esquema)
     identificacion = identificacion_dowhy(col, esquema)
+    comparacion = {
+        "ingenuo": {"ate": crude, "se": se_crude, "ic95": ic_crude},
+        "ols_ajustado": {"ate": ajustado["ate"], "se": ajustado["se"],
+                         "ic95": ajustado["ic"]},
+        "aipw": {"ate": aipw["ate"], "se": aipw["se"], "ic95": aipw["ic"]},
+        "lectura": (
+            "La coincidencia no prueba identificación; una discrepancia orienta "
+            "la revisión de confusión, especificación y soporte."
+        ),
+    }
     dataset_sha256 = hashlib.sha256(
         (DATOS / "observed_train.csv").read_bytes()).hexdigest()
 
@@ -428,15 +514,20 @@ def estimar() -> dict:
         "n": int(len(D)),
         "tratados": int(D.sum()),
         "diferencia_cruda": crude,
+        "se_diferencia_cruda": se_crude,
+        "ic_diferencia_cruda": ic_crude,
+        "comparacion_estimadores": comparacion,
+        "diagnosticos_positividad": positividad,
         "ate_ols": ajustado["ate"], "se": ajustado["se"], "ic95": ajustado["ic"],
         "estimador_principal": "AIPW con cross-fitting (K=5, nuisances fuera de muestra)",
         "ate_aipw": aipw["ate"], "se_aipw": aipw["se"], "ic_aipw": aipw["ic"],
         "estratos": estratos,
         "modelo_individual": individual,
         "ate_trampa_score_post": trampa["ate"],
-        "ess": ess_kish(D, e), "ess_sobre_n": ess_kish(D, e) / len(D),
-        "rango_e": [float(e.min()), float(e.max())],
-        "fraccion_solapamiento": solape,
+        "ess": positividad["ess"],
+        "ess_sobre_n": positividad["ess_sobre_n"],
+        "rango_e": positividad["rango"],
+        "fraccion_solapamiento": positividad["fraccion_solapamiento"],
         "smd_max": max(abs(v) for v in smds.values()),
         "smd_por_covariable": {k: round(v, 3) for k, v in smds.items()},
         "smd_ponderado_max": float(smd_w_max),
@@ -446,8 +537,14 @@ def estimar() -> dict:
         "sd_resultado": sd_y,
         "dataset_sha256": dataset_sha256,
         "sensibilidad": sens,
-        "placebo": {"tratamiento_permutado": placebo_d,
-                    "resultado_permutado": placebo_y},
+        "placebo": {
+            "pasa": bool(placebo_d["placebo_ok"]
+                         and placebo_y["control_negativo_ok"]),
+            "tratamiento_permutado_pasa": bool(placebo_d["placebo_ok"]),
+            "resultado_permutado_pasa": bool(placebo_y["control_negativo_ok"]),
+            "tratamiento_permutado": placebo_d,
+            "resultado_permutado": placebo_y,
+        },
         "validacion_particiones": validacion,
         "identificacion": identificacion,
         "rangos_covariables": {c: [float(col[c].min()), float(col[c].max())]
@@ -487,6 +584,14 @@ if __name__ == "__main__":
     rv = r["sensibilidad"]["valor_robustez_ols"]
     print(f"sensibilidad: E-value = {ev['e_value_punto']:.2f} "
           f"(IC {ev['e_value_ic']:.2f}) | RV OLS = {rv['rv_pct']:.1f} %")
+    manski = r["sensibilidad"]["cotas_manski"]
+    print(f"Manski ATE (sin ignorabilidad) = [{manski['ate'][0]:.2f}, "
+          f"{manski['ate'][1]:.2f}] | soporte Y observado = "
+          f"[{manski['soporte_y'][0]:.2f}, {manski['soporte_y'][1]:.2f}]")
+    ident = r["identificacion"]
+    print(f"identificación: criterio backdoor = "
+          f"{'pasa' if ident.get('identificacion_pasa') else 'falla'} | "
+          f"DoWhy = {ident.get('aplicable', False)}")
     p_d = r["placebo"]["tratamiento_permutado"]
     p_y = r["placebo"]["resultado_permutado"]
     print(f"placebo D: p = {p_d['p_valor_aprox']:.3f} | "

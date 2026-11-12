@@ -1,0 +1,26 @@
+{
+  "nominal": 0.95,
+  "comparacion_cobertura": {
+    "aipw": {
+      "cobertura_ic95": 0.97,
+      "diferencia_vs_nominal": 0.020000000000000018,
+      "error_monte_carlo": 0.017058722109231986,
+      "dentro_de_mas_menos_1_error_mc": false
+    },
+    "ols_ajustado": {
+      "cobertura_ic95": 0.96,
+      "diferencia_vs_nominal": 0.010000000000000009,
+      "error_monte_carlo": 0.019595917942265433,
+      "dentro_de_mas_menos_1_error_mc": true
+    },
+    "ingenuo": {
+      "cobertura_ic95": 0.0,
+      "diferencia_vs_nominal": -0.95,
+      "error_monte_carlo": 0.0,
+      "dentro_de_mas_menos_1_error_mc": false
+    }
+  },
+  "interpretacion": "La diferencia cobertura-nominal debe leerse junto con el error Monte Carlo sqrt(p(1-p)/R); una coincidencia aproximada con 0.95 en esta simulación no es una garantía general de cobertura.",
+  "advertencia": "La cobertura solo aplica a este DGP ilustrativo propio. No demuestra identificación, ausencia de confusión, positividad ni calibración de IC en los escenarios IHDP/jobs ni en datos reales."
+}
+Resultados guardados en: artifacts/cobertura.json

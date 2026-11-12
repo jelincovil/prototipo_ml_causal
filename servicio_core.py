@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import math
 
-from registro import champion
+from registro import champion, verificar_alias
 from rutas import ARTEFACTOS, REGISTRO
 from sensibilidad import e_value_continuo
 
@@ -15,7 +15,13 @@ _cache: dict = {}
 
 TITULOS = {"poblacional": "EFECTO POBLACIONAL",
            "estrato": "EFECTO POR ESTRATO",
-           "individual": "EFECTO PARA UN PERFIL"}
+           "heterogeneidad_estimada": "HETEROGENEIDAD ESTIMADA PARA UN PERFIL"}
+
+ADVERTENCIAS_HETEROGENEIDAD = [
+    "La proyección describe heterogeneidad estimada; no es un CATE individual identificado.",
+    ("El IC es condicional al ajuste lineal y a los scores AIPW del bundle; "
+     "no cubre error de especificación ni incertidumbre de esos scores."),
+]
 
 
 def _num(x: float, decimales: int = 1) -> str:
@@ -29,11 +35,11 @@ def _lectura(efecto: float, ic: list, *, individual: bool = False,
     excluye_cero = ic[0] > 0 or ic[1] < 0
     if individual:
         if not excluye_cero:
-            return ("El intervalo incluye el cero: con estos datos no se puede afirmar "
-                    "un efecto para este perfil.")
-        return ("El intervalo excluye el cero, pero la proyección apenas distingue entre "
-                f"perfiles (R² = {_num(r2 or 0.0, 3)}): tómalo como orientación, no como "
-                "efecto individual.")
+            return ("El intervalo condicional incluye el cero: la proyección para este "
+                    "perfil es compatible con ausencia de heterogeneidad estimada.")
+        return ("El intervalo condicional excluye el cero, pero la proyección apenas "
+                f"distingue entre perfiles (R² = {_num(r2 or 0.0, 3)}): describe "
+                "heterogeneidad estimada; no es un CATE individual identificado.")
     if not excluye_cero:
         return ("El intervalo incluye el cero: no hay evidencia de efecto con este "
                 "tamaño de muestra.")
@@ -48,12 +54,17 @@ def _texto_sensibilidad(sens: dict | None) -> str | None:
         return sens.get("motivo", "no aplicable a este estimando")
     ev = sens.get("e_value") or {}
     rv = sens.get("valor_robustez_ols") or {}
+    manski = sens.get("cotas_manski") or {}
     partes = []
     if ev:
         partes.append(f"E-value {ev.get('e_value_punto', float('nan')):.2f} "
                       f"(IC {ev.get('e_value_ic', float('nan')):.2f})")
     if rv:
         partes.append(f"RV OLS {rv.get('rv_pct', float('nan')):.1f} %")
+    if manski:
+        cotas = manski.get("ate", [float("nan"), float("nan")])
+        partes.append(f"Manski ATE [{cotas[0]:.2f}, {cotas[1]:.2f}] "
+                      "(sin ignorabilidad; soporte Y observado)")
     return "; ".join(partes) or sens.get("lectura")
 
 
@@ -61,24 +72,23 @@ def _texto_identificacion(ident: dict | None) -> str | None:
     if not ident:
         return None
     if ident.get("aplicable") is False:
-        return ident.get("motivo", "identificación no disponible")
-    ok = ident.get("efecto_identificable_por_grafo")
-    criterio = ident.get("criterio", "")
-    metodo = ident.get("metodos_dowhy") or ident.get("metodo_dowhy", "")
-    partes = [f"efecto identificable según el grafo: {'sí' if ok else 'no'}"]
-    if metodo:
-        partes.append(f"DoWhy: {metodo}")
-    if criterio:
-        partes.append(criterio)
+        return "criterio backdoor: no evaluado; " + ident.get(
+            "motivo", "identificación no disponible")
+    pasa = ident.get("identificacion_pasa")
+    if pasa is None:
+        pasa = bool(ident.get("efecto_identificable_por_grafo")
+                    and ident.get("coincide_valid_adjustment_sets"))
+    criterio = ident.get("criterio_principal", "backdoor")
+    metodos = ident.get("metodos_dowhy") or {}
+    metodo = metodos.get("conjunto_backdoor", "default")
+    partes = [f"criterio {criterio}: {'pasa' if pasa else 'falla'}",
+              f"DoWhy: {metodo}"]
     if ident.get("conjunto_ajuste_estimado") is not None:
         n = len(ident["conjunto_ajuste_estimado"])
-        partes.append(f"conjunto de ajuste ({n} vars., extraído de {ident.get('fuente_conjunto')})")
-    bench = ident.get("identification_status_benchmark")
-    if bench:
-        partes.append(f"metadata benchmark: {bench}")
+        partes.append(f"conjunto de ajuste: {n} covariables")
     if ident.get("coincide_valid_adjustment_sets") is not None:
         partes.append(
-            "coincide con valid_adjustment_sets del benchmark: "
+            "coincide con valid_adjustment_sets: "
             f"{'sí' if ident['coincide_valid_adjustment_sets'] else 'no'}")
     return "; ".join(partes)
 
@@ -92,11 +102,15 @@ def _texto_placebo(placebo: dict | None) -> str | None:
     rd = placebo.get("resultado_permutado") or {}
     partes = []
     if td:
-        partes.append(f"D permutado p={td.get('p_valor_aprox', float('nan')):.3f}, "
+        estado = "pasa" if td.get("placebo_ok") else "falla"
+        partes.append(f"D permutado: {estado}; "
+                      f"p={td.get('p_valor_aprox', float('nan')):.3f}, "
                       f"percentil {td.get('percentil_observado', float('nan')):.1f}")
     if rd:
+        estado = "pasa" if rd.get("control_negativo_ok") else "falla"
         ic = rd.get("ic95", [float("nan"), float("nan")])
-        partes.append(f"Y permutado efecto {rd.get('efecto', float('nan')):.2f} "
+        partes.append(f"Y permutado: {estado}; "
+                      f"efecto {rd.get('efecto', float('nan')):.2f} "
                       f"[{ic[0]:.2f}, {ic[1]:.2f}]")
     return "; ".join(partes) or placebo.get("lectura")
 
@@ -109,6 +123,10 @@ def formatear(payload: dict) -> str:
     if payload.get("estado") != "respuesta":
         puerta = payload.get("estado_puerta")
         extra = f"\nPuerta: {puerta}" if puerta else ""
+        if payload.get("deprecacion"):
+            extra += f"\nDeprecación: {payload['deprecacion']}"
+        for advertencia in payload.get("advertencias") or []:
+            extra += f"\nAdvertencia: {advertencia}"
         return (f"{encabezado}\n" + "-" * len(encabezado) +
                 f"\n\nABSTENCIÓN: {payload.get('motivo')}{extra}\n"
                 "No se devuelve ningún número: la consulta no puede responderse con "
@@ -116,9 +134,13 @@ def formatear(payload: dict) -> str:
 
     unidad = payload.get("unidad", "")
     ic = payload["ic95"]
-    filas = [("Estimando", payload.get("estimando", "")),
-             ("Efecto", f"{_num(payload['efecto'])} {unidad}"),
-             ("IC 95 %", f"{_num(ic[0])} a {_num(ic[1])}")]
+    es_heterogeneidad = payload.get("tipo") == "heterogeneidad_estimada"
+    filas = [("Estimando", payload.get("estimando", ""))]
+    if es_heterogeneidad:
+        filas.append(("Proyección", f"{_num(payload['proyeccion'])} {unidad}"))
+    else:
+        filas.append(("Efecto", f"{_num(payload['efecto'])} {unidad}"))
+    filas.append(("IC 95 %", f"{_num(ic[0])} a {_num(ic[1])}"))
     if payload.get("estado_puerta"):
         filas.append(("Puerta", payload["estado_puerta"]))
     if payload.get("tipo") == "estrato":
@@ -126,11 +148,12 @@ def formatear(payload: dict) -> str:
         filas.append(("Estrato", f"{estrato['variable']} = {estrato['valor']} "
                                   f"(n = {estrato['n']})"))
         filas.append(("Nota", payload.get("nota_heterogeneidad", "")))
-    if payload.get("tipo") == "individual":
+    if es_heterogeneidad:
         filas.append(("Ajuste", f"R² = {_num(payload.get('ajuste_r2', 0.0), 3)} "
                                  f"(discriminación {payload.get('confianza_discriminacion')})"))
-        if payload.get("aviso"):
-            filas.append(("Aviso", payload["aviso"]))
+        filas.append(("Advertencias", " · ".join(payload.get("advertencias") or [])))
+    if payload.get("deprecacion"):
+        filas.append(("Deprecación", payload["deprecacion"]))
     sens = _texto_sensibilidad(payload.get("sensibilidad"))
     if sens:
         filas.append(("Sensibilidad", sens))
@@ -156,6 +179,10 @@ def _cargar() -> dict:
     # El bundle viaja: el servicio NO lee los CSV, solo los artefactos con hash.
     if "bundle" not in _cache:
         version = champion()
+        try:
+            integridad_valida = verificar_alias()
+        except (OSError, ValueError, KeyError, TypeError):
+            integridad_valida = False
         carpeta = REGISTRO / version
         manifest = json.loads((carpeta / "manifest.json").read_text())
         monitor = None
@@ -170,6 +197,7 @@ def _cargar() -> dict:
             "tarjeta": json.loads((carpeta / "tarjeta.json").read_text()),
             "manifest": manifest,
             "monitor": monitor,
+            "integridad_valida": bool(integridad_valida),
         }
     return _cache["bundle"]
 
@@ -182,6 +210,16 @@ def _estado_puerta(bundle: dict) -> str:
 
 
 def _abstencion_por_puerta(bundle: dict, tipo: str) -> dict | None:
+    if bundle.get("integridad_valida") is False:
+        return {
+            "estado": "abstencion",
+            "tipo": tipo,
+            "motivo": ("el alias champion o los hashes del bundle no verifican: "
+                       "no se devuelve ningún número"),
+            "integridad_valida": False,
+            "estado_puerta": _estado_puerta(bundle),
+            "version": bundle["version"],
+        }
     estado = _estado_puerta(bundle)
     if estado == "falla":
         return {
@@ -195,22 +233,83 @@ def _abstencion_por_puerta(bundle: dict, tipo: str) -> dict | None:
     return None
 
 
+def _identificacion_resumen(ident: dict) -> dict:
+    pasa = ident.get("identificacion_pasa")
+    if pasa is None:
+        pasa = bool(ident.get("efecto_identificable_por_grafo")
+                    and ident.get("coincide_valid_adjustment_sets"))
+    metodos = ident.get("metodos_dowhy") or {}
+    return {
+        "criterio": ident.get("criterio_principal", "backdoor"),
+        "pasa": bool(pasa),
+        "estado": "pasa" if pasa else "falla",
+        "metodo_dowhy": metodos.get("conjunto_backdoor"),
+        "criterio_backdoor_pasa": ident.get("criterio_backdoor_pasa"),
+        "n_covariables_ajuste": len(ident.get("conjunto_ajuste_estimado") or []),
+        "coincide_valid_adjustment_sets": ident.get("coincide_valid_adjustment_sets"),
+        "motivo": ident.get("motivo"),
+    }
+
+
+def _sensibilidad_resumen(sens: dict) -> dict:
+    ev = sens.get("e_value") or {}
+    rv = sens.get("valor_robustez_ols") or {}
+    manski = sens.get("cotas_manski") or {}
+    return {
+        "e_value_punto": ev.get("e_value_punto"),
+        "e_value_ic": ev.get("e_value_ic"),
+        "valor_robustez_ols_pct": rv.get("rv_pct"),
+        "cotas_manski_ate": manski.get("ate"),
+        "manski_ancho": manski.get("ancho"),
+        "manski_incluye_cero": manski.get("incluye_cero"),
+        "manski_fuente_soporte": manski.get("fuente_soporte"),
+    }
+
+
 def _placebo_resumen(estimacion: dict) -> dict:
     placebo = estimacion.get("placebo", {})
     td = placebo.get("tratamiento_permutado", {})
     rd = placebo.get("resultado_permutado", {})
+    pasa = placebo.get("pasa")
+    if pasa is None:
+        pasa = bool(td.get("placebo_ok") and rd.get("control_negativo_ok"))
     return {
+        "pasa": bool(pasa),
         "tratamiento_permutado_p": td.get("p_valor_aprox"),
         "tratamiento_permutado_ok": td.get("placebo_ok"),
         "resultado_permutado_ok": rd.get("control_negativo_ok"),
+        "tratamiento_permutado": {
+            "pasa": td.get("placebo_ok"),
+            "p_valor_aprox": td.get("p_valor_aprox"),
+            "percentil_observado": td.get("percentil_observado"),
+        },
+        "resultado_permutado": {
+            "pasa": rd.get("control_negativo_ok"),
+            "efecto": rd.get("efecto"),
+            "ic95": rd.get("ic95"),
+            "umbral_material": rd.get("umbral_material"),
+        },
     }
 
 
 def salud() -> dict:
     b = _cargar()
-    return {"estado": "ok", "version": b["version"],
-            "estimando": b["tarjeta"]["estimando"],
-            "estado_puerta": _estado_puerta(b)}
+    estimacion = b["estimacion"]
+    integridad = b.get("integridad_valida", False)
+    return {
+        "estado": "ok" if integridad else "abstencion",
+        "version": b["version"],
+        "estimando": b["tarjeta"]["estimando"],
+        "estado_puerta": _estado_puerta(b),
+        "integridad_valida": integridad,
+        "diagnosticos_positividad": estimacion.get("diagnosticos_positividad", {}),
+        "comparacion_estimadores": estimacion.get("comparacion_estimadores", {}),
+        "identificacion": _identificacion_resumen(
+            estimacion.get("identificacion", {})),
+        "sensibilidad": _sensibilidad_resumen(
+            estimacion.get("sensibilidad", {})),
+        "placebo": _placebo_resumen(estimacion),
+    }
 
 
 def efecto() -> dict:
@@ -222,6 +321,14 @@ def efecto() -> dict:
     e = b["estimacion"]
     efecto = round(e["ate_aipw"], 1)
     ic = [round(x, 1) for x in e["ic_aipw"]]
+    sensibilidad = dict(e.get("sensibilidad", {}))
+    e_value = dict(sensibilidad.get("e_value") or {})
+    if e_value and not e_value.get("limites"):
+        e_value["limites"] = (
+            "Aproximación para resultado continuo: no es una razón de riesgos literal "
+            "ni una cota exacta. No demuestra ausencia de confusión ni cubre mala "
+            "especificación, selección, error de medición o falta de positividad.")
+        sensibilidad["e_value"] = e_value
     return {
         "estado": "respuesta",
         "tipo": "poblacional",
@@ -236,7 +343,10 @@ def efecto() -> dict:
         "estimador": e["estimador_principal"],
         "poblacion": b["tarjeta"]["poblacion"],
         "estado_puerta": _estado_puerta(b),
-        "sensibilidad": e.get("sensibilidad", {}),
+        "integridad_valida": b.get("integridad_valida", False),
+        "diagnosticos_positividad": e.get("diagnosticos_positividad", {}),
+        "comparacion_estimadores": e.get("comparacion_estimadores", {}),
+        "sensibilidad": sensibilidad,
         "placebo": e.get("placebo", {}),
         "identificacion": e.get("identificacion", {}),
         "limitaciones": b["tarjeta"].get("limitaciones", []),
@@ -332,31 +442,40 @@ def campos_formulario() -> dict:
     return campos
 
 
-def efecto_individual(perfil: dict) -> dict:
-    """Efecto esperado para un perfil nuevo, o abstención fuera de soporte.
+def _salida_heterogeneidad(payload: dict) -> dict:
+    payload["tipo"] = "heterogeneidad_estimada"
+    payload["advertencias"] = [
+        *ADVERTENCIAS_HETEROGENEIDAD, *(payload.get("advertencias") or [])]
+    return payload
 
-    Devuelve la proyección lineal del score AIPW sobre las covariables del perfil.
-    No es un CATE validado: el IC es condicional al modelo y al ajuste lineal.
+
+def heterogeneidad(perfil: dict) -> dict:
+    """Proyección de heterogeneidad para un perfil, o abstención fuera de soporte.
+
+    Usa la proyección lineal del score AIPW almacenada en el bundle. El IC es
+    condicional a ese ajuste: no identifica un CATE individual.
     """
     b = _cargar()
-    abst = _abstencion_por_puerta(b, "individual")
+    abst = _abstencion_por_puerta(b, "heterogeneidad_estimada")
     if abst:
-        return abst
+        return _salida_heterogeneidad(abst)
     est = b["estimacion"]
     modelo = est.get("modelo_individual")
     if modelo is None:
-        return {"estado": "abstencion", "tipo": "individual",
-                "motivo": "el bundle de esta versión no trae modelo_individual",
-                "estado_puerta": _estado_puerta(b),
-                "version": b["version"]}
+        return _salida_heterogeneidad({
+            "estado": "abstencion",
+            "motivo": "el bundle de esta versión no trae modelo_individual",
+            "estado_puerta": _estado_puerta(b),
+            "version": b["version"]})
 
     covariables = list(modelo["coeficientes"])
     faltan = [c for c in covariables if c not in perfil]
     if faltan:
-        return {"estado": "abstencion", "tipo": "individual",
-                "motivo": f"faltan covariables del perfil: {faltan}",
-                "estado_puerta": _estado_puerta(b),
-                "version": b["version"]}
+        return _salida_heterogeneidad({
+            "estado": "abstencion",
+            "motivo": f"faltan covariables del perfil: {faltan}",
+            "estado_puerta": _estado_puerta(b),
+            "version": b["version"]})
 
     motivos = []
     for covariable, (lo, hi) in est["rangos_covariables"].items():
@@ -365,10 +484,11 @@ def efecto_individual(perfil: dict) -> dict:
             motivos.append(f"{covariable}={valor:g} fuera de "
                            f"[{round(lo, 4)}, {round(hi, 4)}]")
     if motivos:
-        return {"estado": "abstencion", "tipo": "individual",
-                "motivo": "; ".join(motivos),
-                "estado_puerta": _estado_puerta(b),
-                "version": b["version"]}
+        return _salida_heterogeneidad({
+            "estado": "abstencion",
+            "motivo": "; ".join(motivos),
+            "estado_puerta": _estado_puerta(b),
+            "version": b["version"]})
 
     z = [(float(perfil[c]) - modelo["medias"][c]) / modelo["desviaciones"][c]
          for c in covariables]
@@ -382,47 +502,58 @@ def efecto_individual(perfil: dict) -> dict:
               for i in range(len(v)) for j in range(len(v)))
     se = float(math.sqrt(max(var, 0.0)))
 
-    aviso = None
+    advertencias = []
     if max(abs(zj) for zj in z) > 2.5:
-        aviso = ("perfil en el borde del soporte: la proyección lineal extrapola "
-                 "y el IC subestima la incertidumbre")
+        advertencias.append(
+            "Perfil en el borde del soporte: la proyección lineal extrapola "
+            "y el IC subestima la incertidumbre.")
 
     r2 = float(modelo["r2"])
     discriminacion = ("muy baja" if r2 < 0.05 else
                       "baja" if r2 < 0.15 else "moderada")
 
-    return {
+    return _salida_heterogeneidad({
         "estado": "respuesta",
-        "tipo": "individual",
-        "estimando": ("efecto esperado del programa para un perfil con estas "
-                      "covariables (proyección lineal del score AIPW)"),
-        "efecto": round(float(tau), 1),
+        "estimando": ("heterogeneidad estimada mediante proyección lineal del score "
+                      "AIPW para este perfil; NO es un CATE individual identificado"),
+        "proyeccion": round(float(tau), 1),
         "unidad": est["unidad"],
-        "efecto_texto": (f"{_num(tau)} {est['unidad']} "
-                         f"(IC 95 %: {_num(tau - 1.96 * se)} a {_num(tau + 1.96 * se)})"),
+        "proyeccion_texto": (
+            f"{_num(tau)} {est['unidad']} "
+            f"(IC 95 %: {_num(tau - 1.96 * se)} a {_num(tau + 1.96 * se)})"),
         "ic95": [round(float(tau - 1.96 * se), 1), round(float(tau + 1.96 * se), 1)],
         "interpretacion": _lectura(tau, [tau - 1.96 * se, tau + 1.96 * se],
                                    individual=True, r2=r2),
-        "que_cubre_el_ic": ("la proyección lineal, condicional a los scores AIPW; "
-                            "NO cubre el sesgo de especificación lineal ni es un CATE validado"),
+        "que_cubre_el_ic": (
+            "la incertidumbre condicional de la proyección lineal, dados el ajuste "
+            "y los scores AIPW del bundle; NO identifica un CATE individual ni cubre "
+            "el error de especificación lineal"),
         "ajuste_r2": round(r2, 3),
         "confianza_discriminacion": discriminacion,
         "n_entrenamiento": modelo["n"],
-        "aviso": aviso,
+        "advertencias": advertencias,
         "estado_puerta": _estado_puerta(b),
         "sensibilidad": {"aplicable": False,
-                         "motivo": ("la proyección individual no es un estimando "
-                                    "causal validado; usa /efecto para la "
+                         "motivo": ("la proyección describe heterogeneidad y no es un "
+                                    "CATE individual identificado; usa /efecto para la "
                                     "sensibilidad poblacional")},
         "placebo": {"aplicable": False,
                     "motivo": ("el placebo aplica al ATE poblacional, no a una "
-                               "proyección individual")},
+                               "proyección de heterogeneidad")},
         "identificacion": est.get("identificacion", {}),
         "limitaciones": b["tarjeta"].get("limitaciones", []),
         "version": b["version"],
-    }
+    })
+
+
+def efecto_individual(perfil: dict) -> dict:
+    """Alias deprecado de heterogeneidad; conserva exactamente el mismo núcleo."""
+    payload = heterogeneidad(perfil)
+    payload["deprecacion"] = "alias deprecado; usa /heterogeneidad"
+    payload["endpoint_recomendado"] = "/heterogeneidad"
+    return payload
 
 
 def efecto_lista_de_prueba() -> list[str]:
     """Auxiliar para el humo: las rutas que la prueba de humo ejercita."""
-    return ["/salud", "/efecto", "/consulta", "/efecto_individual"]
+    return ["/salud", "/efecto", "/consulta", "/heterogeneidad", "/efecto_individual"]

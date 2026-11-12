@@ -17,21 +17,20 @@ CAMPOS_TARJETA = (
     "estimando", "poblacion", "supuestos", "umbrales",
     "semilla", "dataset_sha256", "estimador", "uso_previsto",
     "limitaciones", "soporte", "puerta", "sensibilidad",
-    "placebo", "version_esquema",
+    "placebo", "identificacion", "version_esquema",
 )
 
-# Umbrales recalibrados por escenario (justificación en BITACORA, sección 8).
-# Los nuevos umbrales de SMD ponderado y estabilidad del efecto son convenciones
-# iniciales: se declaran como tales en la tarjeta y en el documento.
+# Umbrales por escenario: convenciones iniciales documentadas, no calibración
+# universal. El monitor informa qué decisiones cambian al escalarse ±20 %.
 UMBRALES = {
-    "real/jobs": {
+    "synthetic/jobs": {
         "smd_max": 0.25,
         "smd_ponderado_max": 0.10,
         "psi_alerta": 0.25,
         "solape_min": 0.50,
         "efecto_estabilidad": 0.20,
     },
-    "real/ihdp": {
+    "synthetic/ihdp": {
         "smd_max": 0.50,
         "smd_ponderado_max": 0.25,
         "psi_alerta": 0.25,
@@ -58,7 +57,7 @@ def _escribir(ruta: Path, obj: dict) -> None:
 
 
 def construir_tarjeta(estimacion: dict) -> dict:
-    """Model card mínima, con los umbrales que el monitor usará (calibrados)."""
+    """Model card mínima, con las convenciones de umbral que usará el monitor."""
     covariables = list(estimacion.get("smd_por_covariable", {}))
     n_cov = len(covariables)
     umbrales = dict(UMBRALES[ESCENARIO])
@@ -100,11 +99,16 @@ def construir_tarjeta(estimacion: dict) -> dict:
             "no por evidencia de datos reales.",
             "Modelos de resultado y propensión lineales/logísticos; sin learners "
             "no lineales ni repeated cross-fitting.",
-            "La proyección individual no es un CATE validado y su R² es bajo.",
+            "La proyección por perfil no es un efecto individual, un CATE "
+            "identificado ni una recomendación personal; su R² es bajo.",
             "El placebo y el control negativo son diagnósticos de calibración, "
             "no pruebas de ignorabilidad.",
             "Los umbrales del monitor son convenciones iniciales, no leyes "
-            "universales.",
+            "universales; el análisis ±20 % solo explora sensibilidad local.",
+            "Los rangos y recortes de propensión no demuestran positividad "
+            "poblacional ni soporte multivariable.",
+            "El E-value no cubre mala especificación, falta de positividad, "
+            "selección, error de medición ni violaciones de SUTVA.",
         ],
         "soporte": {
             "rango_propension": estimacion.get("rango_e"),
@@ -127,6 +131,7 @@ def construir_tarjeta(estimacion: dict) -> dict:
         },
         "sensibilidad": estimacion.get("sensibilidad", {}),
         "placebo": estimacion.get("placebo", {}),
+        "identificacion": estimacion.get("identificacion", {}),
         "validacion_particiones": estimacion.get("validacion_particiones", {}),
         "heterogeneidad": {
             "corte": estimacion["estratos"]["variable"],
@@ -136,12 +141,12 @@ def construir_tarjeta(estimacion: dict) -> dict:
             "modelo_individual": {
                 "tipo": estimacion["modelo_individual"]["tipo"],
                 "r2": round(estimacion["modelo_individual"]["r2"], 3),
-                "que_cubre": ("proyección lineal del score AIPW: efecto esperado para un "
-                              "perfil, no un CATE validado"),
+                "que_cubre": ("heterogeneidad estimada por proyección lineal del score "
+                              "AIPW para un perfil; no es un CATE individual identificado"),
             },
             "que_cubre": "media de scores AIPW del estrato, no un CATE individual",
         },
-        "version_esquema": "1.1",
+        "version_esquema": "1.2",
     }
 
 
@@ -156,7 +161,7 @@ def validar_tarjeta(tarjeta: dict) -> None:
                 "no es observable ni no_observable")
     if "acciones" not in tarjeta.get("puerta", {}):
         raise ValueError("tarjeta: falta la sección 'acciones' de la puerta")
-    for campo in ("sensibilidad", "placebo"):
+    for campo in ("sensibilidad", "placebo", "identificacion"):
         if not isinstance(tarjeta.get(campo), dict):
             raise ValueError(f"tarjeta: '{campo}' debe ser un objeto JSON")
 
@@ -179,7 +184,7 @@ def registrar(estimacion: dict, tarjeta: dict, estado_puerta: str = "pasa") -> s
                 for nombre in ("estimacion.json", "tarjeta.json")}
     _escribir(carpeta / "manifest.json", {
         "version": version,
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "dataset_sha256": tarjeta["dataset_sha256"],
         "puerta": estado_puerta,
         "archivos": archivos,
@@ -266,7 +271,7 @@ def _probar_promocion(version: str) -> None:
                 for n in ("estimacion.json", "tarjeta.json")}
     _escribir(carpeta / "manifest.json", {
         "version": version,
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "dataset_sha256": "prueba",
         "puerta": "falla",
         "archivos": archivos,
@@ -297,7 +302,9 @@ if __name__ == "__main__":
         if (candidato.get("escenario") == ESCENARIO
                 and candidato.get("dataset_sha256") == hash_datos
                 and "sensibilidad" in candidato
-                and "placebo" in candidato):
+                and "placebo" in candidato
+                and "diagnosticos_positividad" in candidato
+                and "comparacion_estimadores" in candidato):
             r = candidato
     if r is None:
         r = est.estimar()

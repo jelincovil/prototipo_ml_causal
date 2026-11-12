@@ -9,7 +9,8 @@
     "limite_ic_usado": 3.9300630180948044,
     "supuestos": "Resultado continuo; RR aproximada vía d estandarizado. No es una razón de riesgos literal.",
     "lectura": "Un confusor no medido tendría que asociarse con D y Y, condicionando en X, con una razón de riesgos aproximada de al menos 2.07 para explicar el efecto puntual; el límite del IC más cercano a cero exige al menos 1.85.",
-    "limites": "Aproximación para resultado continuo; no es una cota exacta. Se complementa con el valor de robustez del OLS."
+    "que_responde": "Fuerza mínima de asociación que un confusor no observado tendría que tener con tratamiento y resultado, bajo los supuestos y aproximaciones de la medida, para explicar el estimando o el límite del intervalo.",
+    "limites": "Para resultado continuo usa RR ≈ exp(0.91·d): no es una RR literal ni una cota exacta. No demuestra ausencia de confusión ni cubre mala especificación, selección, error de medición, falta de positividad o dependencia entre unidades. Se complementa con el valor de robustez del OLS."
   },
   "valor_robustez_ols": {
     "metodo": "Valor de robustez de Cinelli & Hazlett (2020)",
@@ -22,5 +23,37 @@
     "limites": "Exacto bajo el modelo lineal de sesgo por omisión para el OLS; no es una propiedad exacta del AIPW."
   },
   "lectura": "E-value puntual 2.07 (IC 1.85); valor de robustez OLS 37.4 %.",
-  "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS."
+  "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS.",
+  "cotas_manski": {
+    "metodo": "cotas de Manski sin ignorabilidad condicional",
+    "aplicable": true,
+    "n": 448,
+    "p_tratados": 0.4263392857142857,
+    "media_y_d1": 56.95834547192459,
+    "media_y_d0": 46.63163455624416,
+    "soporte_y": [
+      10.407453515705225,
+      96.54062761033518
+    ],
+    "fuente_soporte": "mínimo y máximo observados en observed_train.csv",
+    "soporte_observado": true,
+    "e_y1": [
+      30.253927541682675,
+      79.66514571650387
+    ],
+    "e_y0": [
+      31.18784308583582,
+      67.90979900564457
+    ],
+    "ate": [
+      -37.6558714639619,
+      48.47730263066805
+    ],
+    "ancho": 86.13317409462995,
+    "incluye_cero": true,
+    "identificacion_puntual": false,
+    "supuestos": "Consistencia/SUTVA, tratamiento binario y resultado acotado en el soporte indicado. No se supone ignorabilidad condicional.",
+    "lectura": "Sin ignorabilidad condicional, el ATE queda entre -37.66 y 48.48; el intervalo tiene ancho 86.13 y no identifica un valor puntual.",
+    "limites": "El rango observado no garantiza el soporte poblacional: sin un soporte externo declarado, estas cotas son una ilustración de sensibilidad y pueden ser más estrechas que las cotas poblacionales."
+  }
 }

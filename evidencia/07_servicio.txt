@@ -1,14 +1,20 @@
-/salud: 200 {'estado': 'ok', 'version': 'v0004', 'estimando': 'ATE de treatment sobre outcome (efecto total)', 'estado_puerta': 'pasa'}
-/efecto: 200 efecto=5.2 ic95=[3.9, 6.4] version=v0004 puerta=pasa
+/Users/enriquec/Edicion_libros/cursos II 2026/sistema-inteligencia-causal-estudiante-main/07_docencia/semana_4_proyecto/.venv_ci/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+/salud: 200 {'estado': 'ok', 'version': 'v0008', 'estimando': 'ATE de treatment sobre outcome (efecto total)', 'estado_puerta': 'pasa', 'integridad_valida': True, 'diagnosticos_positividad': {'fuente': 'propensiones fuera de pliegue, antes del trimming', 'recorte': [0.05, 0.95], 'rango': [0.042967211161519976, 0.9164360340195433], 'fraccion_solapamiento': 0.9977678571428571, 'total': {'n': 448, 'min': 0.042967211161519976, 'p05': 0.15292246281811253, 'p25': 0.2996032865012428, 'mediana': 0.42506516099613945, 'p75': 0.5675769784889257, 'p95': 0.7465634616959864, 'max': 0.9164360340195433, 'recortado_n': 1, 'recortado_pct': 0.22321428571428573, 'ess': 332.2076014743631, 'ess_sobre_n': 0.7415348247195606}, 'tratados': {'n': 191, 'min': 0.10436482461687986, 'p05': 0.1941070965872676, 'p25': 0.33372188680439907, 'mediana': 0.46197914738254975, 'p75': 0.6002533692733719, 'p95': 0.7233340469273896, 'max': 0.889514136995884, 'recortado_n': 0, 'recortado_pct': 0.0}, 'controles': {'n': 257, 'min': 0.042967211161519976, 'p05': 0.13324271588371617, 'p25': 0.2766661209695297, 'mediana': 0.4014712407366936, 'p75': 0.5351347728159738, 'p95': 0.747756790598544, 'max': 0.9164360340195433, 'recortado_n': 1, 'recortado_pct': 0.38910505836575876}, 'ess': 332.2076014743631, 'ess_sobre_n': 0.7415348247195606, 'advertencia': 'El recorte limita pesos extremos, pero no garantiza positividad poblacional ni solapamiento multivariable; los rangos marginales del servicio tampoco descartan extrapolación conjunta.'}, 'comparacion_estimadores': {'ingenuo': {'ate': 10.32671091568043, 'se': 1.3893259809218885, 'ic95': [7.603631993073527, 13.049789838287332]}, 'ols_ajustado': {'ate': 4.799339395697517, 'se': 0.49446419266469394, 'ic95': [3.8301895780747173, 5.768489213320318]}, 'aipw': {'ate': 5.156995119845635, 'se': 0.6259857661994034, 'ic95': [3.9300630180948044, 6.3839272215964655]}, 'lectura': 'La coincidencia no prueba identificación; una discrepancia orienta la revisión de confusión, especificación y soporte.'}, 'identificacion': {'criterio': 'backdoor', 'pasa': True, 'estado': 'pasa', 'metodo_dowhy': 'default', 'criterio_backdoor_pasa': True, 'n_covariables_ajuste': 25, 'coincide_valid_adjustment_sets': True, 'motivo': None}, 'sensibilidad': {'e_value_punto': 2.07321918229489, 'e_value_ic': 1.8517641804511555, 'valor_robustez_ols_pct': 37.421297744876625, 'cotas_manski_ate': [-37.6558714639619, 48.47730263066805], 'manski_ancho': 86.13317409462995, 'manski_incluye_cero': True, 'manski_fuente_soporte': 'mínimo y máximo observados en observed_train.csv'}, 'placebo': {'pasa': True, 'tratamiento_permutado_p': 0.004975124378109453, 'tratamiento_permutado_ok': True, 'resultado_permutado_ok': True, 'tratamiento_permutado': {'pasa': True, 'p_valor_aprox': 0.004975124378109453, 'percentil_observado': 100.0}, 'resultado_permutado': {'pasa': True, 'efecto': 0.042912425120899274, 'ic95': [-0.2312895159533132, 0.31711436619511174], 'umbral_material': 0.10326346026832695}}}
+/efecto: 200 efecto=5.2 ic95=[3.9, 6.4] version=v0008 puerta=pasa
 /consulta dentro: 200 estado=respuesta efecto=7.2 puerta=pasa
 /consulta fuera (bw=4.05316): 200 estado=abstencion motivo=bw=4.05316 fuera de [-3.1332, 3.0532] (sin número)
 determinismo: dos llamadas idénticas -> iguales
-/efecto_individual dentro: 200 estado=respuesta efecto=9.1 ic95=[6.1, 12.0] r2=0.095
-/efecto_individual fuera (bw=4.05316): 200 estado=abstencion (sin número)
-/efecto?formato=texto: 200 (12 líneas) — lecturas legibles OK
-puerta falla: abstención sin número OK
-/efecto_individual?formato=texto: 200 encabezado OK
+/heterogeneidad dentro: 200 estado=respuesta proyeccion=9.1 ic95=[6.1, 12.0] r2=0.095
+/efecto_individual (alias): 200 tipo=heterogeneidad_estimada deprecacion=alias deprecado; usa /heterogeneidad
+/heterogeneidad fuera (bw=4.05316): 200 estado=abstencion (sin proyección)
+/efecto_individual fuera (alias): 200 estado=abstencion (sin proyección)
+/efecto?formato=texto: 200 (13 líneas) — lecturas legibles OK
+puerta falla: ATE y heterogeneidad se abstienen sin estimación OK
+integridad rota: abstención sin número OK
+/heterogeneidad?formato=texto: 200 encabezado OK
+/efecto_individual?formato=texto: 200 alias deprecado OK
 / (formulario): 200 — 25 campos
-/calcular: 200 informe generado
+/calcular: 200 informe de heterogeneidad generado
 
 HUMO: OK

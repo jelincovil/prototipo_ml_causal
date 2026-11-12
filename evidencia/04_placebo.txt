@@ -1,4 +1,7 @@
 {
+  "pasa": true,
+  "tratamiento_permutado_pasa": true,
+  "resultado_permutado_pasa": true,
   "tratamiento_permutado": {
     "metodo": "placebo de tratamiento permutado (AIPW, pliegues fijos)",
     "n_rep": 200,

@@ -15,7 +15,8 @@ def raiz_repo() -> Path:
     raise FileNotFoundError(f"No encontré {MARCA}/ subiendo desde {d}")
 
 
-ESCENARIO = os.environ.get("SIC_ESCENARIO", "real/jobs")  # p. ej.: SIC_ESCENARIO=real/ihdp
+ESCENARIO = os.environ.get(
+    "SIC_ESCENARIO", "synthetic/jobs")  # p. ej.: SIC_ESCENARIO=synthetic/ihdp
 
 # El servicio no lee CSV: en un contenedor el bundle viaja sin el benchmark.
 try:

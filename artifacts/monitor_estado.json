@@ -1,6 +1,6 @@
 {
-  "version": "v0005",
-  "timestamp": "2026-11-07T02:26:15.987701+00:00",
+  "version": "v0008",
+  "timestamp": "2026-11-12T01:04:37.690409+00:00",
   "ventana_produccion": "sana",
   "estado": "pasa",
   "accion": "continuar",
@@ -113,5 +113,146 @@
       "placebo_ok": true,
       "control_negativo_ok": true
     }
+  },
+  "sensibilidad_umbrales": {
+    "factores": [
+      0.8,
+      1.0,
+      1.2
+    ],
+    "resultados": {
+      "sana": {
+        "0.8": {
+          "accion": "continuar",
+          "estado_puerta": "pasa",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "todo dentro de umbral"
+          ]
+        },
+        "1.0": {
+          "accion": "continuar",
+          "estado_puerta": "pasa",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "todo dentro de umbral"
+          ]
+        },
+        "1.2": {
+          "accion": "continuar",
+          "estado_puerta": "pasa",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "todo dentro de umbral"
+          ]
+        }
+      },
+      "deriva": {
+        "0.8": {
+          "accion": "reentrenar",
+          "estado_puerta": "reentrenar",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "deriva: PSI de bw = 0.88 (umbral 0.2)"
+          ]
+        },
+        "1.0": {
+          "accion": "reentrenar",
+          "estado_puerta": "reentrenar",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "deriva: PSI de bw = 0.88 (umbral 0.25)"
+          ]
+        },
+        "1.2": {
+          "accion": "reentrenar",
+          "estado_puerta": "reentrenar",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "deriva: PSI de bw = 0.88 (umbral 0.3)"
+          ]
+        }
+      },
+      "positividad": {
+        "0.8": {
+          "accion": "abstenerse",
+          "estado_puerta": "falla",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "solapamiento roto: 0% de unidades con e en [0.05, 0.95] (mínimo 24%)"
+          ]
+        },
+        "1.0": {
+          "accion": "abstenerse",
+          "estado_puerta": "falla",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "solapamiento roto: 0% de unidades con e en [0.05, 0.95] (mínimo 30%)"
+          ]
+        },
+        "1.2": {
+          "accion": "abstenerse",
+          "estado_puerta": "falla",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "solapamiento roto: 0% de unidades con e en [0.05, 0.95] (mínimo 36%)"
+          ]
+        }
+      },
+      "balance": {
+        "0.8": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 1.52 (umbral 1.25)"
+          ]
+        },
+        "1.0": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 1.52 (umbral 1.25)"
+          ]
+        },
+        "1.2": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 1.52 (umbral 1.25)"
+          ]
+        }
+      },
+      "confusor_oculto": {
+        "0.8": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)"
+          ]
+        },
+        "1.0": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)"
+          ]
+        },
+        "1.2": {
+          "accion": "alertar",
+          "estado_puerta": "alerta",
+          "cambia_respecto_base": false,
+          "motivo": [
+            "estabilidad: |ATE ventana - ATE champion| = 4.16 (umbral 1.25)"
+          ]
+        }
+      }
+    },
+    "n_cambios": 0,
+    "interpretacion": "Los factores 0.8 y 1.2 muestran sensibilidad local a umbrales que son convenciones iniciales; no constituyen calibración universal ni una garantía de detección."
   }
 }

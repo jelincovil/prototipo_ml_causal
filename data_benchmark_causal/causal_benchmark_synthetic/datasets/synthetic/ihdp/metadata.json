@@ -15,5 +15,5 @@
   "what_is_synthetic": "ALL numerical data: covariates ~N(0,1), treatment from logistic PS model, outcomes from linear formulas with heterogeneous effects",
   "note": "SYNTHETIC DATA. No actual IHDP participant data is included. Generated to match statistical properties reported in Hill (2011).",
   "schema_version": "1.0-stage2",
-  "scenario_id": "real_ihdp"
+  "scenario_id": "synthetic_ihdp"
 }

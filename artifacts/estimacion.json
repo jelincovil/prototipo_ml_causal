@@ -1,10 +1,95 @@
 {
-  "escenario": "real/ihdp",
+  "escenario": "synthetic/ihdp",
   "estimando": "ATE de treatment sobre outcome (efecto total)",
   "unidad": "puntos de test cognitivo",
   "n": 448,
   "tratados": 191,
   "diferencia_cruda": 10.32671091568043,
+  "se_diferencia_cruda": 1.3893259809218885,
+  "ic_diferencia_cruda": [
+    7.603631993073527,
+    13.049789838287332
+  ],
+  "comparacion_estimadores": {
+    "ingenuo": {
+      "ate": 10.32671091568043,
+      "se": 1.3893259809218885,
+      "ic95": [
+        7.603631993073527,
+        13.049789838287332
+      ]
+    },
+    "ols_ajustado": {
+      "ate": 4.799339395697517,
+      "se": 0.49446419266469394,
+      "ic95": [
+        3.8301895780747173,
+        5.768489213320318
+      ]
+    },
+    "aipw": {
+      "ate": 5.156995119845635,
+      "se": 0.6259857661994034,
+      "ic95": [
+        3.9300630180948044,
+        6.3839272215964655
+      ]
+    },
+    "lectura": "La coincidencia no prueba identificación; una discrepancia orienta la revisión de confusión, especificación y soporte."
+  },
+  "diagnosticos_positividad": {
+    "fuente": "propensiones fuera de pliegue, antes del trimming",
+    "recorte": [
+      0.05,
+      0.95
+    ],
+    "rango": [
+      0.042967211161519976,
+      0.9164360340195433
+    ],
+    "fraccion_solapamiento": 0.9977678571428571,
+    "total": {
+      "n": 448,
+      "min": 0.042967211161519976,
+      "p05": 0.15292246281811253,
+      "p25": 0.2996032865012428,
+      "mediana": 0.42506516099613945,
+      "p75": 0.5675769784889257,
+      "p95": 0.7465634616959864,
+      "max": 0.9164360340195433,
+      "recortado_n": 1,
+      "recortado_pct": 0.22321428571428573,
+      "ess": 332.2076014743631,
+      "ess_sobre_n": 0.7415348247195606
+    },
+    "tratados": {
+      "n": 191,
+      "min": 0.10436482461687986,
+      "p05": 0.1941070965872676,
+      "p25": 0.33372188680439907,
+      "mediana": 0.46197914738254975,
+      "p75": 0.6002533692733719,
+      "p95": 0.7233340469273896,
+      "max": 0.889514136995884,
+      "recortado_n": 0,
+      "recortado_pct": 0.0
+    },
+    "controles": {
+      "n": 257,
+      "min": 0.042967211161519976,
+      "p05": 0.13324271588371617,
+      "p25": 0.2766661209695297,
+      "mediana": 0.4014712407366936,
+      "p75": 0.5351347728159738,
+      "p95": 0.747756790598544,
+      "max": 0.9164360340195433,
+      "recortado_n": 1,
+      "recortado_pct": 0.38910505836575876
+    },
+    "ess": 332.2076014743631,
+    "ess_sobre_n": 0.7415348247195606,
+    "advertencia": "El recorte limita pesos extremos, pero no garantiza positividad poblacional ni solapamiento multivariable; los rangos marginales del servicio tampoco descartan extrapolación conjunta."
+  },
   "ate_ols": 4.799339395697517,
   "se": 0.49446419266469394,
   "ic95": [
@@ -865,13 +950,13 @@
     "semilla": 4242
   },
   "ate_trampa_score_post": -0.12201496263432648,
-  "ess": 387.6772885632863,
-  "ess_sobre_n": 0.8653510905430498,
+  "ess": 332.2076014743631,
+  "ess_sobre_n": 0.7415348247195606,
   "rango_e": [
-    0.07054431526679307,
-    0.8867258610971368
+    0.042967211161519976,
+    0.9164360340195433
   ],
-  "fraccion_solapamiento": 1.0,
+  "fraccion_solapamiento": 0.9977678571428571,
   "smd_max": 0.42918841612746034,
   "smd_por_covariable": {
     "bw": 0.429,
@@ -900,33 +985,33 @@
     "tex": 0.144,
     "was": -0.096
   },
-  "smd_ponderado_max": 0.03043184570977848,
+  "smd_ponderado_max": 0.11282262056050492,
   "smd_ponderado_por_covariable": {
-    "bw": 0.018,
-    "b.head": 0.03,
-    "preterm": -0.03,
-    "birth.o": 0.015,
-    "nnhealth": 0.009,
-    "momage": 0.001,
-    "sex": -0.013,
-    "twin": 0.007,
-    "b.marr": 0.001,
-    "mom.lths": 0.012,
-    "mom.hs": -0.015,
-    "mom.scoll": 0.008,
-    "cig": 0.006,
-    "first": -0.002,
-    "booze": -0.011,
-    "drugs": -0.007,
-    "work.dur": 0.021,
-    "prenatal": 0.002,
-    "ark": -0.011,
-    "ein": -0.008,
-    "har": -0.002,
-    "mia": 0.013,
-    "pen": -0.022,
-    "tex": 0.01,
-    "was": -0.018
+    "bw": -0.113,
+    "b.head": -0.025,
+    "preterm": 0.029,
+    "birth.o": -0.041,
+    "nnhealth": 0.051,
+    "momage": 0.038,
+    "sex": -0.055,
+    "twin": -0.043,
+    "b.marr": 0.018,
+    "mom.lths": -0.023,
+    "mom.hs": 0.078,
+    "mom.scoll": -0.011,
+    "cig": -0.019,
+    "first": 0.047,
+    "booze": 0.065,
+    "drugs": -0.073,
+    "work.dur": 0.048,
+    "prenatal": 0.061,
+    "ark": 0.042,
+    "ein": 0.015,
+    "har": 0.057,
+    "mia": 0.002,
+    "pen": -0.019,
+    "tex": -0.008,
+    "was": 0.011
   },
   "sd_resultado": 15.044418993534649,
   "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
@@ -941,7 +1026,8 @@
       "limite_ic_usado": 3.9300630180948044,
       "supuestos": "Resultado continuo; RR aproximada vía d estandarizado. No es una razón de riesgos literal.",
       "lectura": "Un confusor no medido tendría que asociarse con D y Y, condicionando en X, con una razón de riesgos aproximada de al menos 2.07 para explicar el efecto puntual; el límite del IC más cercano a cero exige al menos 1.85.",
-      "limites": "Aproximación para resultado continuo; no es una cota exacta. Se complementa con el valor de robustez del OLS."
+      "que_responde": "Fuerza mínima de asociación que un confusor no observado tendría que tener con tratamiento y resultado, bajo los supuestos y aproximaciones de la medida, para explicar el estimando o el límite del intervalo.",
+      "limites": "Para resultado continuo usa RR ≈ exp(0.91·d): no es una RR literal ni una cota exacta. No demuestra ausencia de confusión ni cubre mala especificación, selección, error de medición, falta de positividad o dependencia entre unidades. Se complementa con el valor de robustez del OLS."
     },
     "valor_robustez_ols": {
       "metodo": "Valor de robustez de Cinelli & Hazlett (2020)",
@@ -954,9 +1040,44 @@
       "limites": "Exacto bajo el modelo lineal de sesgo por omisión para el OLS; no es una propiedad exacta del AIPW."
     },
     "lectura": "E-value puntual 2.07 (IC 1.85); valor de robustez OLS 37.4 %.",
-    "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS."
+    "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS.",
+    "cotas_manski": {
+      "metodo": "cotas de Manski sin ignorabilidad condicional",
+      "aplicable": true,
+      "n": 448,
+      "p_tratados": 0.4263392857142857,
+      "media_y_d1": 56.95834547192459,
+      "media_y_d0": 46.63163455624416,
+      "soporte_y": [
+        10.407453515705225,
+        96.54062761033518
+      ],
+      "fuente_soporte": "mínimo y máximo observados en observed_train.csv",
+      "soporte_observado": true,
+      "e_y1": [
+        30.253927541682675,
+        79.66514571650387
+      ],
+      "e_y0": [
+        31.18784308583582,
+        67.90979900564457
+      ],
+      "ate": [
+        -37.6558714639619,
+        48.47730263066805
+      ],
+      "ancho": 86.13317409462995,
+      "incluye_cero": true,
+      "identificacion_puntual": false,
+      "supuestos": "Consistencia/SUTVA, tratamiento binario y resultado acotado en el soporte indicado. No se supone ignorabilidad condicional.",
+      "lectura": "Sin ignorabilidad condicional, el ATE queda entre -37.66 y 48.48; el intervalo tiene ancho 86.13 y no identifica un valor puntual.",
+      "limites": "El rango observado no garantiza el soporte poblacional: sin un soporte externo declarado, estas cotas son una ilustración de sensibilidad y pueden ser más estrechas que las cotas poblacionales."
+    }
   },
   "placebo": {
+    "pasa": true,
+    "tratamiento_permutado_pasa": true,
+    "resultado_permutado_pasa": true,
     "tratamiento_permutado": {
       "metodo": "placebo de tratamiento permutado (AIPW, pliegues fijos)",
       "n_rep": 200,
@@ -1023,9 +1144,47 @@
     }
   },
   "identificacion": {
-    "aplicable": false,
-    "motivo": "dependencias ausentes: No module named 'dowhy'",
-    "grafo_dot": "",
+    "aplicable": true,
+    "criterio_principal": "backdoor",
+    "criterio_backdoor_pasa": true,
+    "identificacion_pasa": true,
+    "metodos_dowhy": {
+      "conjunto_backdoor": "default",
+      "expresion_estimando": "id-algorithm"
+    },
+    "criterio": "Grafo causal explícito (X→D, X→Y, D→Y con X pre-tratamiento): DoWhy `default` aplica criterio backdoor y devuelve el conjunto de ajuste; `id-algorithm` devuelve la expresión ID (Pearl) del ATE.",
+    "fuente_conjunto": "IdentifiedEstimand.get_backdoor_variables()",
+    "conjunto_ajuste_estimado": [
+      "ark",
+      "b.head",
+      "b.marr",
+      "birth.o",
+      "booze",
+      "bw",
+      "cig",
+      "drugs",
+      "ein",
+      "first",
+      "har",
+      "mia",
+      "mom.hs",
+      "mom.lths",
+      "mom.scoll",
+      "momage",
+      "nnhealth",
+      "pen",
+      "prenatal",
+      "preterm",
+      "sex",
+      "tex",
+      "twin",
+      "was",
+      "work.dur"
+    ],
+    "efecto_identificable_por_grafo": true,
+    "coincide_valid_adjustment_sets": true,
+    "identification_status_benchmark": "identifiable_by_design_all_simulated_confounders_observed_assumption",
+    "grafo_dot": "strict digraph {\nbw;\ntreatment;\noutcome;\n\"b.head\";\npreterm;\n\"birth.o\";\nnnhealth;\nmomage;\nsex;\ntwin;\n\"b.marr\";\n\"mom.lths\";\n\"mom.hs\";\n\"mom.scoll\";\ncig;\nfirst;\nbooze;\ndrugs;\n\"work.dur\";\nprenatal;\nark;\nein;\nhar;\nmia;\npen;\ntex;\nwas;\nbw -> treatment;\nbw -> outcome;\ntreatment -> outcome;\n\"b.head\" -> treatment;\n\"b.head\" -> outcome;\npreterm -> treatment;\npreterm -> outcome;\n\"birth.o\" -> treatment;\n\"birth.o\" -> outcome;\nnnhealth -> treatment;\nnnhealth -> outcome;\nmomage -> treatment;\nmomage -> outcome;\nsex -> treatment;\nsex -> outcome;\ntwin -> treatment;\ntwin -> outcome;\n\"b.marr\" -> treatment;\n\"b.marr\" -> outcome;\n\"mom.lths\" -> treatment;\n\"mom.lths\" -> outcome;\n\"mom.hs\" -> treatment;\n\"mom.hs\" -> outcome;\n\"mom.scoll\" -> treatment;\n\"mom.scoll\" -> outcome;\ncig -> treatment;\ncig -> outcome;\nfirst -> treatment;\nfirst -> outcome;\nbooze -> treatment;\nbooze -> outcome;\ndrugs -> treatment;\ndrugs -> outcome;\n\"work.dur\" -> treatment;\n\"work.dur\" -> outcome;\nprenatal -> treatment;\nprenatal -> outcome;\nark -> treatment;\nark -> outcome;\nein -> treatment;\nein -> outcome;\nhar -> treatment;\nhar -> outcome;\nmia -> treatment;\nmia -> outcome;\npen -> treatment;\npen -> outcome;\ntex -> treatment;\ntex -> outcome;\nwas -> treatment;\nwas -> outcome;\n}\n",
     "aristas": [
       [
         "bw",
@@ -1232,7 +1391,9 @@
         "outcome"
       ]
     ],
-    "nota_grafo": "Solo covariables observadas pre-tratamiento → backdoor clásico; amenazas no observadas se acotan con E-value/placebos, no con este DAG."
+    "nota_grafo": "Solo covariables observadas pre-tratamiento → backdoor clásico; amenazas no observadas se acotan con E-value/placebos, no con este DAG.",
+    "resumen_identified_estimand": "Estimand type: EstimandType.NONPARAMETRIC_ATE\n\n### Estimand : 1\nEstimand name: backdoor\nEstimand expression:\n     d                                                                         ↪\n────────────(E[outcome|pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,a ↪\nd[treatment]                                                                   ↪\n\n↪                                                                              ↪\n↪ rk,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth, ↪\n↪                                                                              ↪\n\n↪                       \n↪ first,preterm,momage])\n↪                       \nEstimand assumption 1, Unconfoundedness: If U→{treatment} and U→outcome then P(outcome|treatment,pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,ark,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth,first,preterm,momage,U) = P(outcome|treatment,pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,ark,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth,first,preterm,momage)\n\n### Estimand : 2\nEstimand name: iv\nNo such variable(s) found!\n\n### Estimand : 3\nEstimand name: frontdoor\nNo such variable(s) found!\n\n### Estimand : 4\nEstimand name: general_adjustment\nEstimand expression:\n     d                                                                         ↪\n────────────(E[outcome|pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,a ↪\nd[treatment]                                                                   ↪\n\n↪                                                                              ↪\n↪ rk,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth, ↪\n↪                                                                              ↪\n\n↪                       \n↪ first,preterm,momage])\n↪                       \nEstimand assumption 1, Unconfoundedness: If U→{treatment} and U→outcome then P(outcome|treatment,pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,ark,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth,first,preterm,momage,U) = P(outcome|treatment,pen,mom.lths,sex,booze,b.marr,work.dur,tex,cig,mom.hs,ark,prenatal,birth.o,was,twin,bw,har,drugs,ein,mom.scoll,mia,b.head,nnhealth,first,preterm,momage)\n",
+    "resumen_id_algorithm": "Sum over {bw,b.head,preterm,birth.o,nnhealth,momage,sex,twin,b.marr,mom.lths,mom.hs,mom.scoll,cig,first,booze,drugs,work.dur,prenatal,ark,ein,har,mia,pen,tex,was}:\n\tPredictor: P(bw)\n\tPredictor: P(outcome|bw,b.head,preterm,birth.o,nnhealth,momage,sex,twin,b.marr,mom.lths,mom.hs,mom.scoll,cig,first,booze,drugs,work.dur,prenatal,ark,ein,har,mia,pen,tex,was,treatment)\n\tPredictor: P(b.head)\n\tPredictor: P(preterm)\n\tPredictor: P(birth.o)\n\tPredictor: P(nnhealth)\n\tPredictor: P(momage)\n\tPredictor: P(sex)\n\tPredictor: P(twin)\n\tPredictor: P(b.marr)\n\tPredictor: P(mom.lths)\n\tPredictor: P(mom.hs)\n\tPredictor: P(mom.scoll)\n\tPredictor: P(cig)\n\tPredictor: P(first)\n\tPredictor: P(booze)\n\tPredictor: P(drugs)\n\tPredictor: P(work.dur)\n\tPredictor: P(prenatal)\n\tPredictor: P(ark)\n\tPredictor: P(ein)\n\tPredictor: P(har)\n\tPredictor: P(mia)\n\tPredictor: P(pen)\n\tPredictor: P(tex)\n\tPredictor: P(was)"
   },
   "rangos_covariables": {
     "bw": [

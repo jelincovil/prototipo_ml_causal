@@ -15,14 +15,14 @@ from rutas import DATOS, ESCENARIO
 
 # Adaptación por escenario: el esquema se declara una vez y viaja con los datos.
 COVARIABLES = {
-    "real/jobs": ("age", "educ", "black", "hispan",
-                  "married", "nodegree", "re74", "re75"),
-    "real/ihdp": ("bw", "b.head", "preterm", "birth.o", "nnhealth", "momage",
-                  "sex", "twin", "b.marr", "mom.lths", "mom.hs", "mom.scoll",
-                  "cig", "first", "booze", "drugs", "work.dur", "prenatal",
-                  "ark", "ein", "har", "mia", "pen", "tex", "was"),
+    "synthetic/jobs": ("age", "educ", "black", "hispan",
+                       "married", "nodegree", "re74", "re75"),
+    "synthetic/ihdp": ("bw", "b.head", "preterm", "birth.o", "nnhealth", "momage",
+                       "sex", "twin", "b.marr", "mom.lths", "mom.hs", "mom.scoll",
+                       "cig", "first", "booze", "drugs", "work.dur", "prenatal",
+                       "ark", "ein", "har", "mia", "pen", "tex", "was"),
 }
-RESULTADO = {"real/jobs": "re78", "real/ihdp": "outcome"}
+RESULTADO = {"synthetic/jobs": "re78", "synthetic/ihdp": "outcome"}
 
 
 # ---------------------------------------------------------------- esquema C-01

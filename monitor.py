@@ -26,10 +26,10 @@ SEMILLA_VENTANA = 4242
 # Ventanas por escenario: qué covariable mueve la deriva, cuál ordena la
 # positividad y cuál se usa para el estrés de balance.
 CONFIG = {
-    "real/jobs": {"sana_n": 700, "deriva": ("age", 10.0),
-                  "positividad": "re74", "balance": "educ"},
-    "real/ihdp": {"sana_n": 300, "deriva": ("bw", 1.0),
-                  "positividad": "bw", "balance": "momage"},
+    "synthetic/jobs": {"sana_n": 700, "deriva": ("age", 10.0),
+                       "positividad": "re74", "balance": "educ"},
+    "synthetic/ihdp": {"sana_n": 300, "deriva": ("bw", 1.0),
+                       "positividad": "bw", "balance": "momage"},
 }
 
 ESTADO = {"continuar": "pasa", "alertar": "alerta",
@@ -40,6 +40,7 @@ PUERTA = {"continuar": "pasa", "alertar": "alerta",
           "reentrenar": "reentrenar", "abstenerse": "falla"}
 ORDEN = {"continuar": 0, "alertar": 1, "reentrenar": 2,
          "revisar_identificacion": 3, "abstenerse": 4}
+FACTORES_UMBRALES = (0.8, 1.0, 1.2)
 
 
 def psi(ref: np.ndarray, nueva: np.ndarray, bins: int = 10, eps: float = 1e-4) -> float:
@@ -123,15 +124,49 @@ VENTANAS = {
 }
 
 
-def evaluar_ventana(train: dict, ventana: dict, esquema: EsquemaCausal,
-                    umbrales: dict, *, ate_champion: float | None = None,
-                    se_champion: float | None = None,
-                    placebo_ok: bool = True,
-                    control_negativo_ok: bool = True) -> dict:
-    """Evalúa una ventana: señales, acción de las cinco y estado de puerta."""
+def medir_ventana(train: dict, ventana: dict, esquema: EsquemaCausal, *,
+                   ate_champion: float | None = None) -> dict:
+    """Calcula las señales una vez; la clasificación puede variar los umbrales."""
     Dw = ventana[esquema.tratamiento]
     n = int(len(Dw))
     if np.unique(Dw).size < 2:
+        return {"n": n, "tratamiento_varia": False}
+
+    Xw = np.column_stack([ventana[c] for c in esquema.covariables])
+    e = propensity(Xw, Dw)
+    psis = {c: psi(train[c], ventana[c]) for c in esquema.covariables}
+    smds_w = {c: smd_ponderado(ventana[c], Dw, e)
+              for c in esquema.covariables}
+    ate_ventana = None
+    estabilidad_diff = None
+    if ate_champion is not None and n >= 20:
+        res = aipw_crossfit(ventana, esquema, k=5 if n >= 100 else 3)
+        ate_ventana = float(res["ate"])
+        estabilidad_diff = abs(ate_ventana - float(ate_champion))
+    return {
+        "n": n,
+        "tratamiento_varia": True,
+        "solapamiento": float(((e >= 0.05) & (e <= 0.95)).mean()),
+        "ess_sobre_n": ess_kish(Dw, e) / n,
+        "psis": psis,
+        "psi_max": max(psis.values()),
+        "smd_max": max(abs(smd(ventana[c], Dw)) for c in esquema.covariables),
+        "smds_w": smds_w,
+        "smd_ponderado_max": max(
+            (abs(v) for v in smds_w.values() if np.isfinite(v)), default=0.0),
+        "ate_ventana": ate_ventana,
+        "estabilidad_diff": estabilidad_diff,
+    }
+
+
+def clasificar_ventana(medidas: dict, umbrales: dict, *,
+                       ate_champion: float | None = None,
+                       se_champion: float | None = None,
+                       placebo_ok: bool = True,
+                       control_negativo_ok: bool = True) -> dict:
+    """Convierte señales ya calculadas en una de las cinco acciones."""
+    n = medidas["n"]
+    if not medidas["tratamiento_varia"]:
         return {"estado": "falla", "accion": "abstenerse",
                 "estado_puerta": "falla", "n": n,
                 "motivo": ["el tratamiento no varía en la ventana"],
@@ -139,26 +174,15 @@ def evaluar_ventana(train: dict, ventana: dict, esquema: EsquemaCausal,
                 "smd_ponderado_max": None, "ess_sobre_n": None,
                 "solapamiento": None}
 
-    Xw = np.column_stack([ventana[c] for c in esquema.covariables])
-    e = propensity(Xw, Dw)
-    solape = float(((e >= 0.05) & (e <= 0.95)).mean())
-    ess_n = ess_kish(Dw, e) / n
-    psis = {c: psi(train[c], ventana[c]) for c in esquema.covariables}
-    psi_max = max(psis.values())
-    smd_max = max(abs(smd(ventana[c], Dw)) for c in esquema.covariables)
-    smds_w = {c: smd_ponderado(ventana[c], Dw, e)
-              for c in esquema.covariables}
-    smd_w_max = max((abs(v) for v in smds_w.values() if np.isfinite(v)),
-                    default=0.0)
-
-    ate_ventana = None
-    estabilidad_diff = None
+    solape = medidas["solapamiento"]
+    psi_max = medidas["psi_max"]
+    smd_w_max = medidas["smd_ponderado_max"]
+    psis, smds_w = medidas["psis"], medidas["smds_w"]
+    ate_ventana = medidas["ate_ventana"]
+    estabilidad_diff = medidas["estabilidad_diff"]
     estabilidad_umbral = None
     estabilidad_ok = True
-    if ate_champion is not None and n >= 20:
-        res = aipw_crossfit(ventana, esquema, k=5 if n >= 100 else 3)
-        ate_ventana = float(res["ate"])
-        estabilidad_diff = abs(ate_ventana - float(ate_champion))
+    if estabilidad_diff is not None:
         se_ref = float(se_champion) if se_champion is not None else 0.0
         estabilidad_umbral = max(
             2.0 * se_ref,
@@ -198,9 +222,9 @@ def evaluar_ventana(train: dict, ventana: dict, esquema: EsquemaCausal,
         "motivo": motivo,
         "n": n,
         "psi_max": round(float(psi_max), 3),
-        "smd_max": round(float(smd_max), 2),
+        "smd_max": round(float(medidas["smd_max"]), 2),
         "smd_ponderado_max": round(float(smd_w_max), 2),
-        "ess_sobre_n": round(float(ess_n), 2),
+        "ess_sobre_n": round(float(medidas["ess_sobre_n"]), 2),
         "solapamiento": round(float(solape), 2),
         "ate_ventana": None if ate_ventana is None else round(ate_ventana, 2),
         "ate_champion": None if ate_champion is None else round(float(ate_champion), 2),
@@ -211,6 +235,77 @@ def evaluar_ventana(train: dict, ventana: dict, esquema: EsquemaCausal,
         "estabilidad_ok": bool(estabilidad_ok),
         "placebo_ok": bool(placebo_ok),
         "control_negativo_ok": bool(control_negativo_ok),
+    }
+
+
+def evaluar_ventana(train: dict, ventana: dict, esquema: EsquemaCausal,
+                    umbrales: dict, *, ate_champion: float | None = None,
+                    se_champion: float | None = None,
+                    placebo_ok: bool = True,
+                    control_negativo_ok: bool = True) -> dict:
+    """Mide y clasifica una ventana; conserva la interfaz del prototipo."""
+    medidas = medir_ventana(train, ventana, esquema, ate_champion=ate_champion)
+    return clasificar_ventana(
+        medidas, umbrales, ate_champion=ate_champion, se_champion=se_champion,
+        placebo_ok=placebo_ok, control_negativo_ok=control_negativo_ok)
+
+
+def umbrales_escalados(umbrales: dict, factor: float) -> dict:
+    """Escala los cortes que participan en la puerta, sin tocar el diagnóstico SMD.
+
+    ``smd_max`` se conserva porque se informa pero no clasifica. ``solape_min``
+    es una fracción y queda acotada a [0, 1].
+    """
+    if factor <= 0:
+        raise ValueError("el factor de los umbrales debe ser positivo")
+    escalados = dict(umbrales)
+    for clave in ("psi_alerta", "smd_ponderado_max", "efecto_estabilidad"):
+        escalados[clave] = float(umbrales[clave]) * factor
+    escalados["solape_min"] = min(
+        1.0, max(0.0, float(umbrales["solape_min"]) * factor))
+    return escalados
+
+
+def sensibilidad_umbrales(medidas_por_ventana: dict, umbrales: dict, *,
+                          ate_champion: float, se_champion: float,
+                          placebo_ok: bool, control_negativo_ok: bool,
+                          resultados_base: dict) -> dict:
+    """Reclasifica medidas ya calculadas con umbrales ±20 %.
+
+    No vuelve a ajustar AIPW. Los factores exploran sensibilidad local a las
+    convenciones iniciales de la tarjeta; no las calibran ni validan.
+    """
+    resultados = {}
+    n_cambios = 0
+    for nombre, medidas in medidas_por_ventana.items():
+        variantes = {}
+        for factor in FACTORES_UMBRALES:
+            clasificacion = clasificar_ventana(
+                medidas, umbrales_escalados(umbrales, factor),
+                ate_champion=ate_champion, se_champion=se_champion,
+                placebo_ok=placebo_ok, control_negativo_ok=control_negativo_ok)
+            if factor == 1.0:
+                assert clasificacion == resultados_base[nombre], (
+                    f"la clasificación base de {nombre} no es reproducible")
+            cambia = clasificacion["accion"] != resultados_base[nombre]["accion"]
+            if factor != 1.0:
+                n_cambios += int(cambia)
+            variantes[str(factor)] = {
+                "accion": clasificacion["accion"],
+                "estado_puerta": clasificacion["estado_puerta"],
+                "cambia_respecto_base": cambia,
+                "motivo": clasificacion["motivo"],
+            }
+        resultados[nombre] = variantes
+    return {
+        "factores": list(FACTORES_UMBRALES),
+        "resultados": resultados,
+        "n_cambios": n_cambios,
+        "interpretacion": (
+            "Los factores 0.8 y 1.2 muestran sensibilidad local a umbrales que "
+            "son convenciones iniciales; no constituyen calibración universal "
+            "ni una garantía de detección."
+        ),
     }
 
 
@@ -236,10 +331,13 @@ if __name__ == "__main__":
           f"umbrales de la tarjeta: {umbrales})\n")
 
     resultados = {}
+    medidas_por_ventana = {}
     for nombre, fn in VENTANAS.items():
-        r = evaluar_ventana(
-            train, fn(train, esquema), esquema, umbrales,
-            ate_champion=ate_champion, se_champion=se_champion,
+        medidas = medir_ventana(
+            train, fn(train, esquema), esquema, ate_champion=ate_champion)
+        medidas_por_ventana[nombre] = medidas
+        r = clasificar_ventana(
+            medidas, umbrales, ate_champion=ate_champion, se_champion=se_champion,
             placebo_ok=placebo_ok, control_negativo_ok=control_negativo_ok)
         resultados[nombre] = r
         print(f"[{nombre:15s}] estado = {r['estado']:6s} | "
@@ -257,6 +355,14 @@ if __name__ == "__main__":
             print(f"                  - {m}")
         print()
 
+    sensibilidad = sensibilidad_umbrales(
+        medidas_por_ventana, umbrales, ate_champion=ate_champion,
+        se_champion=se_champion, placebo_ok=placebo_ok,
+        control_negativo_ok=control_negativo_ok, resultados_base=resultados)
+    print(f"sensibilidad de umbrales ±20 %: {sensibilidad['n_cambios']} "
+          "cambios de acción fuera de la clasificación base")
+    print("son convenciones iniciales, no umbrales calibrados universalmente\n")
+
     produccion = os.environ.get("SIC_VENTANA", "sana")
     if produccion not in resultados:
         produccion = "sana"
@@ -272,6 +378,7 @@ if __name__ == "__main__":
         "peor_accion": peor["accion"],
         "peor_estado_puerta": peor["estado_puerta"],
         "ventanas": resultados,
+        "sensibilidad_umbrales": sensibilidad,
     }
     ARTEFACTOS.mkdir(exist_ok=True)
     (ARTEFACTOS / "monitor_estado.json").write_text(

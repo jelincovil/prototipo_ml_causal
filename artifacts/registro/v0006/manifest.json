@@ -1,0 +1,13 @@
+{
+  "version": "v0006",
+  "schema_version": "1.2",
+  "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
+  "puerta": "pasa",
+  "archivos": {
+    "estimacion.json": "7fe35b8ea5ce14420b5f3092888658a313ff87e94cb5531eb3b2fc6690122773",
+    "tarjeta.json": "e179e65ecd1f368f9a880f4b8246b865fc1d538f2f69e0ab05fc6012bde2a858"
+  },
+  "estimacion_sha256": "7fe35b8ea5ce14420b5f3092888658a313ff87e94cb5531eb3b2fc6690122773",
+  "tarjeta_sha256": "e179e65ecd1f368f9a880f4b8246b865fc1d538f2f69e0ab05fc6012bde2a858",
+  "alias_version": "v0006"
+}

@@ -29,7 +29,7 @@
 #v(0.2em)
 
 #text(size: 9.5pt, fill: luma(80))[
-  Prototipo «Puente» — semana 4 · escenario `real/ihdp` · documento de referencia
+  Prototipo «Puente» — semana 4 · escenario `synthetic/ihdp` · documento de referencia
   del benchmark sintético, del estimando y del prototipo en producción local.
 ]
 
@@ -47,7 +47,7 @@
   ("servicio.py",        "FastAPI + bundle champion"),
 )
 #let flujo_api_nombre = "API"
-#let flujo_api_respuesta = "respuesta: /efecto · /consulta · /efecto_individual"
+#let flujo_api_respuesta = "respuesta: /efecto · /consulta · /heterogeneidad"
 #let flujo_api_abstencion = "abstención (fuera de rango o puerta falla)"
 #let flujo_gate_bloqueo = "alerta / falla"
 
@@ -149,7 +149,7 @@ y `SIC_ESCENARIO`.
 
 #block(width: 100%, inset: 9pt, radius: 3pt,
   fill: rgb("#eef3f9"), stroke: 0.6pt + rgb("#9db3cc"))[
-  *Alcance.* `real/ihdp` y `real/jobs` son nombres de escenario; todos los
+  *Alcance.* `synthetic/ihdp` y `synthetic/jobs` son nombres de escenario; todos los
   valores son sintéticos. Los resultados son una demostración metodológica, no
   una recomendación clínica, laboral o de política pública. El caso es uno de
   los casos guiados del curso: el subcriterio 1.1 queda en parcial y no se
@@ -162,7 +162,7 @@ y `SIC_ESCENARIO`.
   columns: (1.4fr, 2.4fr, 2.4fr),
   inset: 6pt,
   align: (left, left, left),
-  table.header([*Dato*], [*`real/ihdp`*], [*`real/jobs`*]),
+  table.header([*Dato*], [*`synthetic/ihdp`*], [*`synthetic/jobs`*]),
   [Inspiración], [Hill (2011), JCGS 20(1)], [LaLonde (1986), AER 76(4)],
   [Unidades (total; train / validation / test)],
     [747 (448 / 149 / 150)], [1722 (1033 / 344 / 345)],
@@ -230,7 +230,7 @@ B») es no lineal y no paralela: el potencial bajo control se genera como
 exponencial de una combinación lineal, y el efecto sobre los tratados se calibra
 en 4.
 
-*Capa 3 — este paquete.* `real/ihdp` *no contiene ningún registro del ensayo*.
+*Capa 3 — este paquete.* `synthetic/ihdp` *no contiene ningún registro del ensayo*.
 `metadata.json` lo declara sin ambigüedad: `SYNTHETIC - generated from scratch
 using formula-based simulation (Hill 2011 style)`. Se conservan el nombre del
 escenario, el número de unidades (747), el número y los nombres de las
@@ -244,7 +244,7 @@ usa otra semilla, 20240701, y es estratificada por tratamiento.
   columns: (1.5fr, 3.6fr),
   inset: 6pt,
   align: (left, left),
-  table.header([*Rasgo*], [*`real/ihdp`*]),
+  table.header([*Rasgo*], [*`synthetic/ihdp`*]),
   [Unidades], [747 en total: 448 en `train`, 149 en `validation`, 150 en `test`],
   [Covariables], [25, todas continuas y simuladas],
   [Tratamiento: columna `treatment`],
@@ -326,18 +326,21 @@ magnitud pequeña-media.
   inset: 6pt,
   align: (left, left, left),
   table.header([*Cantidad*], [*Valor*], [*Lectura*]),
-  [Diferencia cruda de medias], [10,33], [lo que se ve sin ajustar],
-  [OLS con las 25 covariables], [4,8], [el mismo contraste, ajustado linealmente],
-  [*AIPW con cross-fitting*], [*5,2*],
-    [estimando principal, IC de 3,9 a 6,4 (sección 6)],
+  [Diferencia cruda de medias], [10,3; IC aprox. [7,60; 13,05]],
+    [lo que se ve sin ajustar],
+  [OLS con las 25 covariables], [4,8; IC [3,8; 5,8]],
+    [el mismo contraste, ajustado linealmente],
+  [*AIPW con cross-fitting*], [*5,2; IC [3,9; 6,4]*],
+    [estimando principal (sección 6)],
   [Atribuible a composición], [≈ 5,2], [cerca de la mitad del contraste bruto],
 )
 
 *Quién es confusor.* Las 25 covariables lo son *por construcción*: cada una es
 causa del tratamiento y del resultado. La pregunta no es «¿ajusté por lo
 correcto?» —eso lo fija el diseño— sino «¿la maquinaria corrige una confusión que
-sé que existe?». El residuo se mide: el SMD máximo cae de 0,43 sin ponderar a 0,03
-ponderado por IPW, y el ESS de Kish es 388 de 448.
+sé que existe?». El residuo se mide con propensiones OOF antes del `trimming`:
+el SMD máximo cae de 0,43 sin ponderar a 0,11 ponderado por IPW, y el ESS de Kish
+es 332,2076 de 448 (0,7415; ≈332/448 y 0,74).
 
 == 2. Pregunta, estimando y población
 
@@ -352,16 +355,16 @@ tratamiento* (ATE):
 
 $ tau = E[Y(1) - Y(0)] $
 
-- *Unidad:* puntos del test cognitivo en `real/ihdp`; dólares de 1978 en
-  `real/jobs`.
-- *Población objetivo:* las 448 unidades de `observed_train.csv` en `real/ihdp`.
+- *Unidad:* puntos del test cognitivo en `synthetic/ihdp`; dólares de 1978 en
+  `synthetic/jobs`.
+- *Población objetivo:* las 448 unidades de `observed_train.csv` en `synthetic/ihdp`.
   El AIPW promedia scores sobre esta muestra; la interpretación causal requiere
   los supuestos de la sección 4.
 - *Qué cubre el IC del ATE:* incertidumbre del efecto promedio, no un efecto
   individual ni un CATE. `/consulta` devuelve, como máximo, la media de un
   estrato predefinido; tampoco es un efecto individual.
 - *No es el ATT.* Preguntar por el efecto «en quienes recibieron el programa»
-  describe el ATT. En la referencia agregada de `real/ihdp`, ATE = 3,92 y
+  describe el ATT. En la referencia agregada de `synthetic/ihdp`, ATE = 3,92 y
   ATT = 4,15; se comparan solo al final.
 
 == 3. Identificación y por qué el ATE es identificable
@@ -374,6 +377,13 @@ estrategia natural porque el benchmark es un corte transversal sintético,
 `identification.json` lista las 25 covariables como conjunto de ajuste válido.
 No se usa variable instrumental, diferencias en diferencias ni regresión
 discontinua: no hay instrumento, panel pre/post ni umbral de asignación.
+
+*Comprobación ejecutable.* `identificacion_dowhy()` construye el DAG y ejecuta
+DoWhy con `method_name="default"`, que aplica el criterio *backdoor* y devuelve
+el conjunto de ajuste. En el champion, `identificacion_pasa = true`: el conjunto
+contiene las 25 covariables y coincide con `valid_adjustment_sets`.
+`id-algorithm` aporta una expresión algebraica complementaria, no una segunda
+prueba. `/efecto` y `/salud` informan `criterio = backdoor` y `pasa = true`.
 
 *Supuestos de identificación.*
 
@@ -430,10 +440,13 @@ completo de la sección 14 explicita la amenaza de confusión no medida.
      No se verifica con los datos observados ni se generaliza a IHDP real.],
   [Positividad / soporte común: $0 < e(X) < 1$],
     [`observable`],
-    [En `train`, la propensión estimada vive en [0,071; 0,887], el 100 % cae en
-     [0,05; 0,95] y el ESS de Kish es 388/448 (0,87). Son diagnósticos
-     muestrales; no prueban positividad poblacional ni para perfiles nuevos.
-     El servicio se abstiene fuera del rango de entrenamiento.],
+    [En `train`, las propensiones estimadas fuera de pliegue (OOF), antes del
+     `trimming`, tienen rango [0,043; 0,916] y solape 0,99777 en [0,05; 0,95]
+     (≈99,8 %; la CLI redondea 100 %). El ESS de Kish es 332,2076/448 = 0,7415
+     (≈332/448 y 0,74). Se recorta 1 unidad de 448 (0,2232 %); todos los recortes
+     son controles (1/257 = 0,3891 % de controles) y ninguno es tratado. Son
+     diagnósticos muestrales; no prueban positividad poblacional ni para perfiles
+     nuevos. El servicio se abstiene fuera del rango de entrenamiento.],
   [Consistencia / SUTVA: $Y = Y(D)$ y no interferencia],
     [`no_observable`],
     [El DGP es unitario, con ruido independiente. No hay chequeo directo; se
@@ -477,12 +490,18 @@ información, no un control negativo. El placebo real se describe en la sección
      parcial de `D` y de `Y`, después de condicionar en `X`, para llevar el
      coeficiente OLS a cero. Es exacto para el OLS; no es una propiedad exacta
      del AIPW.],
-  [Placebo de tratamiento permutado],
+  [Cotas de Manski],
+    [ATE [−37,66; 48,48]; ancho 86,13],
+    [Sin ignorabilidad condicional, el ATE no queda identificado puntualmente y
+     las cotas incluyen cero. Se usa el rango observado de `Y`, [10,41; 96,54],
+     como ilustración: los extremos muestrales no garantizan el soporte
+     poblacional. Requieren consistencia/SUTVA y resultado acotado.],
+  [Placebo de tratamiento permutado — *pasa*],
     [p = 0,005; percentil 100],
     [200 réplicas, pliegues fijos. Placebo: media −0,04, DE 0,62, IC
      [−1,42; 1,06]. El ATE observado (5,16) es extremo. Evalúa calibración e
      implementación; no prueba ignorabilidad.],
-  [Placebo de resultado permutado],
+  [Placebo de resultado permutado — *pasa*],
     [0,04; IC [−0,23; 0,32]],
     [Se permutó `momage` y se usó como pseudo-resultado, manteniendo `X`
      original. El umbral material es 0,10. No prueba ausencia de confusión; es
@@ -504,18 +523,32 @@ covariables es el comparador.
 #table(
   columns: (2.8fr, 2.2fr),
   inset: 6pt,
-  table.header([*Cantidad*], [*`real/ihdp`*]),
-  [Diferencia cruda], [10,3 puntos],
+  table.header([*Cantidad*], [*`synthetic/ihdp`*]),
+  [Diferencia cruda], [10,3 puntos; IC aprox. [7,60; 13,05]],
   [ATE OLS (comparador)], [4,8 puntos; IC [3,8; 5,8]],
   [*ATE AIPW*], [*5,2 puntos; IC [3,9; 6,4]*],
-  [ESS de Kish / n], [388 / 448 (0,87)],
-  [Rango de la propensión estimada], [[0,071; 0,887]],
-  [Fracción en solape [0,05; 0,95]], [100 %],
+  [ESS de Kish OOF / n], [332,2076 / 448 = 0,7415 (≈332/448 y 0,74)],
+  [Rango de propensión OOF, antes de `trimming`], [[0,043; 0,916]],
+  [Solape OOF en [0,05; 0,95], antes de `trimming`],
+    [0,99777 (≈99,8 %; la CLI redondea 100 %)],
+  [Unidades recortadas],
+    [1/448 (0,2232 %): la recortada es control (0,3891 % de controles); 0 tratadas],
   [SMD máximo sin ponderar], [0,43],
-  [SMD máximo ponderado por IPW], [0,03],
+  [SMD máximo ponderado por IPW OOF], [0,11],
   [Trampa `score_post`], [−0,1; el coeficiente se vació],
   [$R^2$ de la proyección individual], [0,095; discriminación baja],
 )
+
+*Estabilidad entre contrastes.* Se comparan la diferencia cruda (10,3; IC aprox.
+[7,60; 13,05]), OLS (4,8; IC [3,8; 5,8]) y AIPW (5,2; IC [3,9; 6,4]). Es una
+comprobación de estabilidad entre estimadores —en particular, de los dos
+ajustados—, no una prueba de identificación ni de ignorabilidad.
+
+*Cobertura Monte Carlo.* En un DGP ilustrativo propio —no IHDP ni Jobs—, con
+$n = 500$, $R = 100$ y semilla `20261111`, la cobertura de los IC al 95 % fue:
+AIPW 0,97 (error MC 0,01706), OLS 0,96 (error MC 0,01960) e ingenuo 0,00
+(error MC 0). AIPW difiere 0,02 del nominal y queda fuera de ±1 error MC: esta
+corrida no sustenta una afirmación de calibración exacta.
 
 *Validación por particiones.* El estimando primario es el de `train`. Las otras
 particiones son un chequeo de estabilidad, no un holdout aleatorizado ni una
@@ -548,11 +581,12 @@ antes de mirar los efectos:
 No es un CATE: son dos medias de scores AIPW con su IC. El corte no se eligió
 por ganancia de varianza.
 
-*Diagnósticos.* El rango de propensión, el ESS y el solapamiento de la tabla se
-calculan sobre `train` con una propensión ajustada en toda la muestra; no son
-las predicciones cross-fit del score AIPW. El SMD sin ponderar es el máximo
-entre tratados y controles; el SMD ponderado usa pesos IPW y es el que usa la
-puerta. Ningún diagnóstico demuestra que los supuestos causales se cumplan.
+*Diagnósticos.* Las propensiones de `train` son predicciones fuera de pliegue
+(OOF), no de un ajuste en toda la muestra. Rango, ESS, solape y SMD se evalúan
+antes del `trimming`; la fila de recortes resume su aplicación. El SMD sin
+ponderar es el máximo entre tratados y controles; el SMD ponderado usa pesos IPW
+OOF y es el que usa la puerta. Ningún diagnóstico demuestra que los supuestos
+causales se cumplan.
 
 == 7. Servicio, tarjeta y registro
 
@@ -564,22 +598,31 @@ puerta. Ningún diagnóstico demuestra que los supuestos causales se cumplan.
   inset: 5pt,
   table.header([*Ruta*], [*Respuesta*]),
   [`/efecto`],
-    [ATE, IC, versión, `estado_puerta`, `sensibilidad`, `placebo` y
-     `limitaciones`; si la puerta es `falla`, abstención sin número.],
+    [ATE, IC, versión, `estado_puerta`, criterio de identificación
+     (`backdoor: pasa`), E-value, valor de robustez, cotas de Manski, placebos
+     con `pasa/falla`, integridad y limitaciones; si la puerta es `falla` o el
+     bundle no verifica, abstención sin número.],
   [`/consulta`],
     [media del estrato con IC, `estado_puerta`, E-value del estrato y referencia
      al placebo poblacional; fuera de soporte, abstención sin número.],
+  [`/heterogeneidad`],
+    [Devuelve `proyeccion`, una proyección lineal del score AIPW, con IC
+     condicional y advertencias. No es un CATE identificado;
+     `sensibilidad.aplicable = false` y `placebo.aplicable = false`; fuera de
+     soporte, abstención.],
   [`/efecto_individual`],
-    [proyección lineal del score AIPW; `sensibilidad.aplicable = false` y
-     `placebo.aplicable = false` porque no es un estimando causal validado;
-     fuera de soporte, abstención.],
+    [Alias deprecado de `/heterogeneidad`, con el mismo contrato (`proyeccion`,
+     IC condicional y advertencias), las mismas limitaciones y abstención;
+     tampoco es un CATE identificado.],
   [`/salud`],
-    [estado del servicio, versión y `estado_puerta`.],
+    [estado, versión, puerta, integridad y resúmenes del criterio backdoor,
+     sensibilidad, cotas de Manski y placebos.],
 )
 
 *Tarjeta.* `tarjeta.json` incluye estimando, población, supuestos, umbrales,
 semilla, hash del dataset, estimador, uso previsto, limitaciones, soporte,
-puerta, sensibilidad, placebo, validación por particiones y versión de esquema.
+puerta, sensibilidad, placebo, identificación, validación por particiones y
+versión de esquema.
 Clasifica los supuestos como `observable` o `no_observable`.
 
 *Registro.* Cada corrida crea `artifacts/registro/vNNNN/` con
@@ -587,8 +630,8 @@ Clasifica los supuestos como `observable` o `no_observable`.
 `artifacts/alias_champion.json` apunta a la versión campeona y
 `artifacts/registro/champion` se mantiene por compatibilidad. Una versión con
 puerta `falla` nunca se promueve; una versión en `alerta` exige aceptación
-explícita. `v0001` a `v0003` se conservan inmutables; la corrida de este
-documento promovió `v0004`.
+explícita. `v0001` a `v0007` se conservan intactos; el champion actual es
+`v0008`. El servicio verifica alias y hashes al cargar.
 
 == 8. Monitoreo y regla de decisión
 
@@ -611,7 +654,7 @@ menor a mayor severidad; la puerta aplica primero la más severa.
     número (`estado_puerta = falla`).],
 )
 
-*Ventanas de la corrida (`real/ihdp`).* La ventana de producción es `sana`; las
+*Ventanas de la corrida (`synthetic/ihdp`).* La ventana de producción es `sana`; las
 demás son evidencias de estrés y no bloquean el servicio por sí solas.
 
 #table(
@@ -637,6 +680,10 @@ observa `U`; la sensibilidad de la sección 5 es la que acota su fuerza.
 convenciones iniciales, no leyes universales; están en la tarjeta y se
 declaran como tales.
 
+*Sensibilidad de umbrales ±20 %.* Ya está incluida en esta corrida: se observaron
+0 cambios de acción respecto de la clasificación base. Es una comprobación local
+de esta ejecución, no una calibración universal.
+
 == 9. Flujo del trabajo
 
 La figura de la página 1 resume la cadena completa. Cada etapa consume los
@@ -656,9 +703,9 @@ El estado de la puerta y la regla de abstención están en la sección 8.
 Desde la raíz del repositorio:
 
 ```sh
-SIC_ESCENARIO=real/ihdp make demo
-SIC_ESCENARIO=real/ihdp make pruebas
-make evidencia
+SIC_ESCENARIO=synthetic/ihdp make PYTHON=.venv_ci/bin/python demo
+SIC_ESCENARIO=synthetic/ihdp make PYTHON=.venv_ci/bin/python pruebas
+make PYTHON=.venv_ci/bin/python evidencia
 shasum -a 256 -c evidencia/SHA256SUMS
 ```
 
@@ -667,10 +714,18 @@ shasum -a 256 -c evidencia/SHA256SUMS
   inset: 5pt,
   table.header([*Cifra*], [*Evidencia*]),
   [ATE 5,2 [3,9; 6,4]], [`evidencia/02_estimacion.txt`],
-  [E-value 2,07 / RV 37,4 %], [`evidencia/03_sensibilidad.txt`],
+  [Comparación: cruda 10,3 [7,60; 13,05] (aprox.); OLS 4,8 [3,8; 5,8];
+   AIPW 5,2 [3,9; 6,4]], [`evidencia/02_estimacion.txt`],
+  [E-value 2,07 / RV 37,4 % / Manski [−37,66; 48,48]], [`evidencia/03_sensibilidad.txt`],
   [Placebo D p=0,005; placebo Y 0,04 [−0,23; 0,32]], [`evidencia/04_placebo.txt`],
-  [ESS 388/448; rango e [0,071; 0,887]], [`evidencia/02_estimacion.txt`],
+  [OOF antes de `trimming`: e [0,043; 0,916]; solape 0,99777 (≈99,8 %);
+   ESS 332,2076/448 = 0,7415; SMD ponderado 0,11; 1 recorte (0,2232 %), control],
+    [`evidencia/02_estimacion.txt`],
+  [Cobertura MC en DGP propio: AIPW 0,97; OLS 0,96; ingenuo 0,00],
+    [`evidencia/10_cobertura.txt` y `evidencia/10_cobertura.json`],
   [Puerta de producción y ventanas], [`evidencia/05_puerta.txt`],
+  [Sensibilidad de umbrales ±20 %: 0 cambios de acción],
+    [`evidencia/05_puerta.txt`],
   [Versión, manifiesto y alias], [`evidencia/06_registro.txt`],
   [Servicio y abstención], [`evidencia/07_servicio.txt`],
   [DAG], [`evidencia/08_dag.txt`],
@@ -679,8 +734,9 @@ shasum -a 256 -c evidencia/SHA256SUMS
 
 No hay cifras inventadas: las de este documento salen de
 `artifacts/estimacion.json`, `artifacts/monitor_estado.json` y
-`artifacts/registro/v0004/`. Si se vuelve a ejecutar la cadena, se crea una
-versión nueva y el alias cambia; la evidencia conserva los hashes de la corrida.
+`artifacts/registro/v0008/`. El champion actual es `v0008`; `v0001` a `v0007`
+permanecen intactos. Si se vuelve a ejecutar la cadena, se crea una versión
+nueva y el alias cambia; la evidencia conserva los hashes de la corrida.
 
 == 11. Cierre para un lector no técnico
 
@@ -695,6 +751,8 @@ covariables observadas, un buen solapamiento entre tratados y controles, un
 placebo de tratamiento que se comporta como se espera y un placebo de resultado
 sin efecto material. La sensibilidad indica que un confusor no medido tendría
 que ser moderadamente fuerte (RR aproximada ≥ 2,07) para explicar el efecto.
+Las cotas de Manski incluyen cero: sin ignorabilidad no basta para afirmar un
+efecto positivo.
 
 *Cuándo dejar de confiar.* Si la población cambia y el monitor detecta deriva
 (`reentrenar`); si el solapamiento se rompe (`abstenerse`); si el placebo o el
@@ -757,7 +815,7 @@ Si no se puede mostrar el artefacto o reproducir la cifra, ese resultado no
 cuenta como evidencia propia.
 
 #page(flipped: true, margin: (x: 1cm, y: 1cm))[
-  == 14. DAG completo de `real/ihdp`
+  == 14. DAG completo de `synthetic/ihdp`
 
   // Graphviz → SVG (`figuras/dag_ihdp_detalle.dot`); página apaisada dedicada.
   #grid(
@@ -784,7 +842,7 @@ cuenta como evidencia propia.
 `har`, `mia`, `pen`, `tex`, `was`.
 
 La versión resumida (plate), con covariables agrupadas, está en
-`figuras/dag_ihdp_plate.svg`. La versión de `real/jobs`, con 8 covariables,
+`figuras/dag_ihdp_plate.svg`. La versión de `synthetic/jobs`, con 8 covariables,
 está en `figuras/dag_jobs.svg`.
 
 == 15. Rúbrica: estado del prototipo
@@ -803,17 +861,17 @@ está en `figuras/dag_jobs.svg`.
   [2.2], [Supuestos clasificados], [Completo],
     [§4: `observable` / `no_observable` en tarjeta; evidencia falsificable §5–§8],
   [2.3], [Estimación con intervalo y validación], [Completo],
-    [§6: AIPW K=5, IC, validación por particiones y reproducibilidad],
+    [§6: AIPW K=5, IC, comparación de estimadores, cobertura Monte Carlo en DGP propio y validación por particiones],
   [2.4], [Interpretación y sensibilidad], [Completo],
     [§5: E-value y RV con lectura y límites],
   [3.1], [Servicio y contrato], [Completo],
-    [§7: puerta, sensibilidad, placebo y abstención; `humo.py`],
+    [§7: `/heterogeneidad` con `proyeccion` e IC condicional, alias deprecado, puerta y abstención; `humo.py`],
   [3.2], [Model card completa y propia], [Completo],
     [§7; `tarjeta.json` con uso previsto, limitaciones, soporte y puerta],
   [3.3], [Registro con manifiesto], [Completo],
-    [§7; `v0004`, manifiesto, `alias_champion.json`; bloqueo de `falla` probado],
+    [§7; champion `v0008`, `v0001`–`v0007` intactos, manifiesto y `alias_champion.json`; bloqueo de `falla` probado],
   [4.1], [Señales con umbral y acción], [Completo],
-    [§8: PSI, SMD ponderado, ESS, solape y estabilidad; umbrales declarados],
+    [§8: PSI, SMD ponderado, ESS, solape y estabilidad; umbrales declarados y sensibilidad local ±20 %],
   [4.2], [Regla de decisión probada], [Completo],
     [§8: cinco acciones y cinco ventanas contrastantes],
   [4.3], [Control negativo o placebo], [Completo],

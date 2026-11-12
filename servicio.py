@@ -4,7 +4,7 @@ Arranque:  uvicorn servicio:app --port 8000
 Humo:      python humo.py
 
 Cada ruta entrega JSON por defecto y un informe legible con `?formato=texto`.
-La raíz `/` sirve un formulario para calcular el efecto de un perfil.
+La raíz `/` sirve un formulario para proyectar heterogeneidad en un perfil.
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def _responder(payload: dict, formato: str):
 
 @app.get("/", response_class=HTMLResponse)
 def formulario() -> str:
-    """Formulario para estimar el efecto de un perfil (una covariable por campo)."""
+    """Formulario para estimar heterogeneidad en un perfil (una covariable por campo)."""
     campos = nucleo.campos_formulario()
     controles = "\n".join(
         f'<label>{html.escape(nombre)}'
@@ -57,10 +57,11 @@ def formulario() -> str:
         f'<span class="rango">{d["min"]:.2f} … {d["max"]:.2f}</span></label>'
         for nombre, d in campos.items())
     return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
-<title>Efecto por perfil — prototipo causal</title><style>{ESTILO}</style></head><body>
-<h1>Efecto estimado para un perfil</h1>
+<title>Heterogeneidad por perfil — prototipo causal</title><style>{ESTILO}</style></head><body>
+<h1>Heterogeneidad estimada para un perfil</h1>
 <p class="sub">Ajusta las covariables (escala del escenario, ~N(0,1)) y pulsa
-<strong>Estimar</strong>. Fuera del rango de entrenamiento la respuesta es abstención.</p>
+<strong>Estimar</strong>. El resultado es una proyección, no un CATE individual
+identificado. Fuera del rango de entrenamiento la respuesta es abstención.</p>
 <form action="/calcular" method="get">
   <fieldset><legend>{len(campos)} covariables</legend>
     <div class="grid">{controles}</div>
@@ -68,6 +69,7 @@ def formulario() -> str:
   <button type="submit">Estimar</button>
 </form>
 <p class="sub">API: <a href="/docs">/docs</a> ·
+<code>POST /heterogeneidad</code> ·
 <a href="/efecto?formato=texto">efecto poblacional</a></p>
 </body></html>"""
 
@@ -85,7 +87,7 @@ def calcular(request: Request) -> str:
         except ValueError:
             cuerpo = '<div class="bad">Algún valor no es numérico.</div>'
         else:
-            payload = nucleo.efecto_individual(perfil)
+            payload = nucleo.heterogeneidad(perfil)
             cuerpo = f"<pre>{html.escape(nucleo.formatear(payload))}</pre>"
     return f"""<!doctype html><html lang="es"><head><meta charset="utf-8">
 <title>Resultado — prototipo causal</title><style>{ESTILO}</style></head><body>
@@ -112,12 +114,19 @@ def consulta(perfil: dict, formato: str = Query("json", description="json | text
     return _responder(nucleo.consulta(perfil), formato)
 
 
-@app.post("/efecto_individual")
-def efecto_individual(perfil: dict,
-                      formato: str = Query("json", description="json | texto")):
-    """Efecto esperado para un perfil nuevo (proyección lineal del score AIPW).
+@app.post("/heterogeneidad")
+def heterogeneidad(perfil: dict,
+                   formato: str = Query("json", description="json | texto")):
+    """Proyección de heterogeneidad para un perfil; no identifica un CATE individual.
 
     Perfil: todas las covariables del escenario. Fuera del soporte de
-    entrenamiento responde abstención (HTTP 200, sin número).
+    entrenamiento responde abstención (HTTP 200, sin proyección).
     """
+    return _responder(nucleo.heterogeneidad(perfil), formato)
+
+
+@app.post("/efecto_individual", deprecated=True)
+def efecto_individual(perfil: dict,
+                      formato: str = Query("json", description="json | texto")):
+    """Alias deprecado de /heterogeneidad, con idéntico núcleo de respuesta."""
     return _responder(nucleo.efecto_individual(perfil), formato)

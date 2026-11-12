@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0-stage4",
-  "scenario_id": "real_jobs",
+  "scenario_id": "synthetic_jobs",
   "source_observed_file": "observed.csv",
   "source_truth_file": "truth.csv",
   "split_seed": 20240701,
