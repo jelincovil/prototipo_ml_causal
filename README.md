@@ -2,6 +2,8 @@
 
 Repositorio público del prototipo: **[github.com/jelincovil/prototipo_ml_causal](https://github.com/jelincovil/prototipo_ml_causal)**.
 
+**Acceso para auditoría (sin cuenta ni token):** [índice del código fuente y enlaces de texto directo](AUDITORIA.md) · [descargar ZIP](https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/heads/main).
+
 **Alcance:** Prototipo local de estimación causal con AIPW, abstención fuera de soporte y monitoreo, con datos sintéticos. No es un sistema desplegado ni un producto clínico o laboral.
 
 Usa los escenarios `synthetic/ihdp` y `synthetic/jobs`. Estima el ATE con AIPW y
