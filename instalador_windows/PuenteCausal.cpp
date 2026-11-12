@@ -616,12 +616,25 @@ std::wstring PowerShellPath() {
             L"System32\\WindowsPowerShell\\v1.0\\powershell.exe").wstring();
 }
 
+std::wstring PowerShellLiteral(std::wstring_view value) {
+    std::wstring result = L"'";
+    for (wchar_t character : value) {
+        result.push_back(character);
+        if (character == L'\'') {
+            result.push_back(L'\'');
+        }
+    }
+    result.push_back(L'\'');
+    return result;
+}
+
 void ExpandArchive(const fs::path& archive, const fs::path& destination) {
     EnsureDirectory(destination);
+    std::wstring command = L"Expand-Archive -LiteralPath " +
+        PowerShellLiteral(archive.wstring()) + L" -DestinationPath " +
+        PowerShellLiteral(destination.wstring()) + L" -Force";
     RunProcess({PowerShellPath(), L"-NoLogo", L"-NoProfile", L"-NonInteractive",
-                L"-ExecutionPolicy", L"Bypass", L"-Command",
-                L"& { Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force }",
-                archive.wstring(), destination.wstring()}, InstallRoot());
+                L"-ExecutionPolicy", L"Bypass", L"-Command", command}, InstallRoot());
 }
 
 void RemoveOwnedDirectory(const fs::path& directory) {
@@ -1318,14 +1331,18 @@ int SelfTest() {
             return 14;
         }
     }
+    const std::wstring sample = L"C:\\carpeta con espacios\\O'Neill $datos.zip";
+    if (PowerShellLiteral(L"a'b") != L"'a''b'") {
+        return 16;
+    }
     try {
+        std::wstring command = L"$valor = " + PowerShellLiteral(sample) +
+            L"; if ($valor -ne " + PowerShellLiteral(sample) + L") { exit 87 }";
         RunProcess({PowerShellPath(), L"-NoLogo", L"-NoProfile", L"-NonInteractive",
-                    L"-ExecutionPolicy", L"Bypass", L"-Command",
-                    L"& { if ($args.Count -ne 2 -or $args[0] -ne 'uno dos' -or "
-                    L"$args[1] -ne 'C:\\ruta\\archivo.zip') { exit 87 } }",
-                    L"uno dos", L"C:\\ruta\\archivo.zip"}, fs::temp_directory_path());
+                    L"-ExecutionPolicy", L"Bypass", L"-Command", command},
+                   fs::temp_directory_path());
     } catch (const std::exception& error) {
-        AppendLog(L"Autoevaluación de argumentos PowerShell: " + Utf8ToWide(error.what()));
+        AppendLog(L"Autoevaluación de rutas PowerShell: " + Utf8ToWide(error.what()));
         return 15;
     }
     Health health = ParseHealth(
