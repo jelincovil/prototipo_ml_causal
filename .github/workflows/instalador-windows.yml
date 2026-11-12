@@ -1,0 +1,81 @@
+name: Instalador Windows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "instalador_windows/**"
+      - ".github/workflows/instalador-windows.yml"
+  pull_request:
+    paths:
+      - "instalador_windows/**"
+      - ".github/workflows/instalador-windows.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compilar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar con MSVC
+        run: cmake -S instalador_windows -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Compilar ejecutable nativo
+        run: cmake --build build --config Release --parallel
+
+      - name: Autoevaluación sin interfaz gráfica
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Instalación y servicio reales al publicar
+        if: github.event_name == 'release'
+        timeout-minutes: 25
+        shell: pwsh
+        run: |
+          & "build/Release/PuenteCausal.exe" --smoke-test
+          $code = $LASTEXITCODE
+          $log = Join-Path $env:LOCALAPPDATA "PuenteCausal/registros/lanzador.log"
+          if (Test-Path $log) { Get-Content $log -Tail 100 }
+          if ($code -ne 0) { throw "Falló la prueba integral del lanzador (código $code)." }
+
+      - name: Preparar hash del ejecutable
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path "build/Release/PuenteCausal.exe"
+          $hash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
+          [IO.File]::WriteAllText("$PWD/PuenteCausal.exe", [IO.File]::ReadAllBytes($exe))
+          [IO.File]::WriteAllText("$PWD/PuenteCausal.exe.sha256", "$hash  PuenteCausal.exe`n", [Text.Encoding]::ASCII)
+          Write-Host "SHA-256: $hash"
+
+      - name: Conservar artefacto de compilación
+        uses: actions/upload-artifact@v4
+        with:
+          name: PuenteCausal-windows-x64
+          path: |
+            PuenteCausal.exe
+            PuenteCausal.exe.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  publicar_release:
+    if: github.event_name == 'release'
+    needs: compilar
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: PuenteCausal-windows-x64
+
+      - name: Adjuntar descarga pública
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$env:RELEASE_TAG" PuenteCausal.exe PuenteCausal.exe.sha256 --clobber

@@ -1,5 +1,13 @@
 # Proyecto — «Puente» (semana 4)
 
+## Windows sin terminal (recomendado)
+
+1. Descarga **[PuenteCausal.exe](https://github.com/jelincovil/prototipo_ml_causal/releases/latest/download/PuenteCausal.exe)**. También está disponible su [SHA-256](https://github.com/jelincovil/prototipo_ml_causal/releases/latest/download/PuenteCausal.exe.sha256).
+2. Haz doble clic y pulsa **Instalar / verificar**.
+3. Pulsa **Iniciar servicio** y después **Abrir ATE**.
+
+El navegador mostrará **http://127.0.0.1:8000/efecto**. El lanzador instala en `%LOCALAPPDATA%\PuenteCausal`, muestra sus errores y registros, y no exige abrir una terminal, permisos de administrador, .NET SDK ni herramientas de compilación. Usa de forma oculta el PowerShell incluido en Windows solo para descomprimir archivos. Lee [uso, desinstalación y diagnóstico](instalador_windows/LEEME.md). El binario no está firmado comercialmente, por lo que Windows SmartScreen puede advertir.
+
 ## Puesta en marcha en 1 comando
 
 Linux/Mac:
@@ -8,7 +16,7 @@ Linux/Mac:
 bash setup.sh && bash arrancar.sh
 ```
 
-Windows:
+Windows PowerShell (alternativa a la interfaz gráfica):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup.ps1
@@ -25,7 +33,7 @@ Docker (opcional):
 docker compose up
 ```
 
-El instalador usa `uv`: instala `uv` y Python 3.13 si faltan, **recrea `.venv`** e instala `requirements.txt`. Es idempotente, pero descarta paquetes adicionales o personalizaciones del entorno anterior. El servicio usa `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo.
+Los scripts usan `uv`: instalan `uv` y Python 3.13 si faltan, **recrean `.venv`** e instalan `requirements.txt`. Son idempotentes, pero descartan paquetes adicionales o personalizaciones del entorno anterior. El lanzador gráfico, en cambio, reutiliza un entorno válido y solo lo recrea al elegir **Reparar entorno**. Ambas vías usan `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Con los scripts, deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo. Con el lanzador, cierra la ventana o pulsa **Detener**.
 
 Repositorio público del prototipo: **[github.com/jelincovil/prototipo_ml_causal](https://github.com/jelincovil/prototipo_ml_causal)**.
 

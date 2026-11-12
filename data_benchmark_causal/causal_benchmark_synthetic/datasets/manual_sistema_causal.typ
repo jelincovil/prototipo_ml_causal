@@ -256,7 +256,31 @@ La instalación es repetible: puedes volver a ejecutar `setup.sh`, teniendo en c
 recrea el entorno. El arranque no es repetible en el mismo puerto: no ejecutes dos copias
 simultáneas del servicio.
 
-== Windows PowerShell: un comando
+== Windows sin terminal: doble clic
+
+La vía más simple no exige abrir Terminal, PowerShell ni CMD:
+
++ Descarga #link("https://github.com/jelincovil/prototipo_ml_causal/releases/latest/download/PuenteCausal.exe")[*PuenteCausal.exe*] del release oficial.
++ Haz doble clic y pulsa *Instalar / verificar*.
++ Pulsa *Iniciar servicio* y después *Abrir ATE*.
+
+El lanzador instala el código de la versión publicada, `uv` 0.13.8 y Python 3.13 en
+`%LOCALAPPDATA%\PuenteCausal`, no en `Documents`. Reutiliza un entorno válido al repetir la
+instalación. *Reparar entorno* pide confirmación, conserva el anterior en `respaldo/` y crea
+uno nuevo. Ejecuta Uvicorn directamente con `synthetic/ihdp`; no activa una consola y no
+regenera estimaciones, artefactos ni el champion `v0008`.
+
+Los botones *Detener*, *Abrir /docs* y *Abrir registros* permiten operar y diagnosticar sin
+comandos. Cerrar el lanzador detiene el servicio que haya iniciado. Para desinstalar, detén
+el servicio y borra `PuenteCausal` dentro de `%LOCALAPPDATA%` desde el Explorador; luego
+borra el `.exe` descargado. Los registros permanecen en el equipo y no se envían a Internet.
+
+El binario no tiene firma comercial, así que SmartScreen puede advertir. El release también
+incluye `PuenteCausal.exe.sha256`. La autoevaluación de compilación no equivale a validar la
+interacción gráfica en cada PC. Consulta `instalador_windows/LEEME.md` para procedencia,
+descargas externas, privacidad y diagnóstico de permisos o antivirus.
+
+=== Alternativa: Windows PowerShell
 
 Desde la raíz del clon, en PowerShell:
 
@@ -268,18 +292,9 @@ if ($LASTEXITCODE -eq 0) {
 ```
 
 La condición evita arrancar si falla `setup` y funciona también en Windows PowerShell 5.1.
-
-Por separado:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File setup.ps1
-powershell -ExecutionPolicy Bypass -File arrancar.ps1
-```
-
-El flujo está diseñado para ser equivalente: `uv`, Python 3.13, recreación de `.venv`,
-dependencias directas fijadas y Uvicorn. *Ha recibido revisión estática, no ejecución en
-Windows nativo ni PowerShell.* Si `uv` queda fuera de `PATH`, cierra y abre PowerShell y
-repite el comando. Para los ejemplos HTTP usa `curl.exe`, no el alias histórico `curl`.
+Esta alternativa sí *recrea `.venv`*. Ha recibido revisión estática, no una validación
+completa del flujo en Windows nativo. Si `uv` queda fuera de `PATH`, cierra y abre PowerShell
+y repite el comando. Para los ejemplos HTTP usa `curl.exe`, no el alias histórico `curl`.
 
 == Docker Compose: alternativa
 
