@@ -76,7 +76,7 @@ El lanzador evita instalar en `Documents`, pero no puede garantizar que una pol�
 
 ## Compilar y probar (solo desarrolladores)
 
-El estudiante no necesita CMake, C++, Rust, .NET SDK ni Visual Studio. El flujo `.github/workflows/instalador-windows.yml` compila en `windows-latest`, ejecuta una autoevaluación sin GUI, conserva el ejecutable y adjunta el binario al release publicado.
+El estudiante no necesita CMake, C++, Rust, .NET SDK ni Visual Studio. El flujo `.github/workflows/instalador-windows.yml` compila con MSVC en `windows-2022`, ejecuta una autoevaluación sin GUI, conserva el ejecutable y adjunta el binario al release publicado después de la prueba integral de instalación y servicio.
 
 Equipo de desarrollo Windows con Visual Studio 2022 y CMake:
 
