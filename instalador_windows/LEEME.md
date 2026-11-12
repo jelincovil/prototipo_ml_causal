@@ -28,7 +28,7 @@ Usa exclusivamente esta carpeta:
 
 Normalmente corresponde a `C:\Users\<usuario>\AppData\Local\PuenteCausal`. En el Explorador puedes pegar `%LOCALAPPDATA%\PuenteCausal` en la barra de direcciones.
 
-- `app/`: fuente de `v1.0.1` del repositorio y artefactos conservados.
+- `app/`: fuente de `v1.0.2` del repositorio y artefactos conservados.
 - `herramientas/`: `uv` 0.13.8 y Python 3.13 administrado por `uv`.
 - `cache/`: descargas de paquetes utilizadas por `uv`.
 - `registros/lanzador.log`: instalación, arranque y errores del lanzador.
@@ -45,7 +45,7 @@ Una instalación existente se reutiliza. **Reparar entorno** pide confirmación,
 
 Conexión necesaria la primera vez para obtener:
 
-- el ZIP de `v1.0.1` desde `codeload.github.com`;
+- el ZIP de `v1.0.2` desde `codeload.github.com`;
 - `uv` 0.13.8 desde su release oficial en `github.com/astral-sh/uv`;
 - Python 3.13 y los paquetes de `requirements.txt` desde las fuentes que resuelva `uv`.
 
@@ -86,4 +86,4 @@ cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-El ejecutable usa Win32, WinHTTP, BCrypt y PowerShell exclusivamente para `Expand-Archive`, oculto y sin descargar scripts. El runtime MSVC se enlaza estáticamente. La autoevaluación `--self-test` comprueba el citado de argumentos Windows, lectura del estado del servicio y SHA-256. Al publicar un release, el modo `--smoke-test` realiza además una instalación nativa completa en el runner, arranca Uvicorn y exige champion `v0008`, integridad válida, puerta `pasa` y una respuesta `/efecto` con efecto e IC antes de adjuntar el binario. Ninguna de estas pruebas equivale a validar la interacción gráfica en cada PC.
+El ejecutable usa Win32, WinHTTP, BCrypt y PowerShell exclusivamente para `Expand-Archive`, oculto y sin descargar scripts. El runtime MSVC se enlaza estáticamente. La autoevaluación `--self-test` comprueba el citado de argumentos Windows, su paso real a PowerShell, la lectura del estado del servicio y SHA-256. Al publicar un release, el modo `--smoke-test` realiza además una instalación nativa completa en el runner, arranca Uvicorn y exige champion `v0008`, integridad válida, puerta `pasa` y una respuesta `/efecto` con efecto e IC antes de adjuntar el binario. Ninguna de estas pruebas equivale a validar la interacción gráfica en cada PC.

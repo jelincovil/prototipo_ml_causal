@@ -33,7 +33,7 @@ using namespace std::chrono_literals;
 
 constexpr wchar_t kWindowClass[] = L"PuenteCausalVentana";
 constexpr wchar_t kProjectUrl[] =
-    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.1";
+    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.2";
 constexpr wchar_t kUvVersion[] = L"0.13.8";
 constexpr wchar_t kUvX64Url[] =
     L"https://github.com/astral-sh/uv/releases/download/0.13.8/"
@@ -620,7 +620,7 @@ void ExpandArchive(const fs::path& archive, const fs::path& destination) {
     EnsureDirectory(destination);
     RunProcess({PowerShellPath(), L"-NoLogo", L"-NoProfile", L"-NonInteractive",
                 L"-ExecutionPolicy", L"Bypass", L"-Command",
-                L"Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force",
+                L"& { Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force }",
                 archive.wstring(), destination.wstring()}, InstallRoot());
 }
 
@@ -690,7 +690,7 @@ void EnsureSource() {
         return;
     }
     fs::path root = InstallRoot();
-    fs::path archive = root / L"descargas" / L"prototipo-v1.0.1.zip";
+    fs::path archive = root / L"descargas" / L"prototipo-v1.0.2.zip";
     fs::path extracted = root / L"trabajo" / L"fuente";
     RemoveOwnedDirectory(extracted);
     DownloadFile(kProjectUrl, archive);
@@ -1317,6 +1317,15 @@ int SelfTest() {
         if (!matches) {
             return 14;
         }
+    }
+    try {
+        RunProcess({PowerShellPath(), L"-NoLogo", L"-NoProfile", L"-NonInteractive",
+                    L"-ExecutionPolicy", L"Bypass", L"-Command",
+                    L"& { if ($args.Count -ne 2 -or $args[0] -ne 'uno dos' -or "
+                    L"$args[1] -ne 'C:\\ruta\\archivo.zip') { exit 87 } }",
+                    L"uno dos", L"C:\\ruta\\archivo.zip"}, fs::temp_directory_path());
+    } catch (...) {
+        return 15;
     }
     Health health = ParseHealth(
         R"({"estado":"ok","version":"v0008","integridad_valida": true,"estado_puerta":"pasa"})");
