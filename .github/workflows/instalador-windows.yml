@@ -37,8 +37,11 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
-          & "build/Release/PuenteCausal.exe" --smoke-test
-          $code = $LASTEXITCODE
+          # Una aplicación Win32 no bloquea «&» ni fija siempre $LASTEXITCODE.
+          # Start-Process -Wait garantiza que la instalación y el servicio terminen.
+          $exe = Resolve-Path "build/Release/PuenteCausal.exe"
+          $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -Wait -PassThru
+          $code = $process.ExitCode
           $log = Join-Path $env:LOCALAPPDATA "PuenteCausal/registros/lanzador.log"
           if (Test-Path $log) { Get-Content $log -Tail 100 }
           if ($code -ne 0) { throw "Falló la prueba integral del lanzador (código $code)." }
