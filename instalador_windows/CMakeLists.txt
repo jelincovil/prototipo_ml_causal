@@ -12,6 +12,9 @@ add_executable(PuenteCausal WIN32
   PuenteCausal.rc
 )
 
+# El manifiesto se incorpora desde PuenteCausal.rc; no generar otro al enlazar.
+set_target_properties(PuenteCausal PROPERTIES LINK_FLAGS "/MANIFEST:NO")
+
 target_compile_features(PuenteCausal PRIVATE cxx_std_20)
 target_compile_definitions(PuenteCausal PRIVATE
   UNICODE
