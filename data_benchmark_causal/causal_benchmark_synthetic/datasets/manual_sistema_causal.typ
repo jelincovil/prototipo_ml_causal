@@ -1132,12 +1132,12 @@ una sustitución de las pruebas en el equipo de cada usuario.
   [Docker Compose],
     [Revisión estática de `docker-compose.yml`],
     [No ejecutado: el plugin Compose no estaba instalado],
-  [Windows / lanzador gráfico],
-    [Compilación MSVC y `ctest --self-test` en `windows-2022`, ejecución Actions 43322853322],
-    [Ambas superadas con `v0008`. Publicar exige también instalación y arranque `--smoke-test`,
-    integridad, puerta `pasa` y `/efecto` válidos; los assets no se adjuntan si falla. Falta
-    comprobar la interacción gráfica en el PC del usuario y repetir la prueba integral con
-    `v0009`],
+  [Windows / lanzador gráfico `v1.0.4`],
+    [Compilación MSVC, `ctest --self-test` e instalación nativa `--smoke-test` en `windows-2022`,
+    ejecución Actions 43474496586],
+    [Superadas con `v0009`: arranque real, integridad válida, puerta `pasa`, `/salud` y
+    `/efecto` con efecto e IC. Descarga pública comprobada por SHA-256. No se probó la
+    interacción gráfica en el PC concreto del usuario],
   [Windows / PowerShell],
     [Revisión estática de los `.ps1` y comandos, compatibles con sintaxis 5.1],
     [Scripts no ejecutados en Windows nativo; el lanzador recomendado no depende de ellos],
