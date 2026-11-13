@@ -43,9 +43,10 @@ conservadas en `evidencia/`; no sustituyen una nueva ejecución de las comprobac
   AIPW**, **0,96 OLS** y **0,00 ingenuo**, con errores Monte Carlo 0,01706,
   0,01960 y 0. AIPW difiere 0,02 del nominal y no está dentro de ±1 error Monte
   Carlo. No evalúa IHDP/jobs ni demuestra calibración general.
-- La validación conservada corresponde al champion **`v0008`**: `PRUEBAS: OK`,
-  `HUMO: OK`; `v0001`–`v0007` permanecen intactas. Las ediciones documentales
-  no promueven versiones.
+- La validación del champion **`v0009`** dio `PRUEBAS: OK` y `HUMO: OK`;
+  `v0001`–`v0008` permanecen intactas. Esta versión incorpora Rosenbaum Γ,
+  cotas de Manski y placebos con interpretación en `/efecto` y `/salud`.
+  Las ediciones documentales por sí solas no promueven versiones.
 - Los artefactos son JSON, no `pickle`/`joblib`, y las dependencias están
   fijadas con versiones exactas en `requirements.txt`.
 - DoWhy/DAG no verifica ignorabilidad; los rangos marginales no garantizan

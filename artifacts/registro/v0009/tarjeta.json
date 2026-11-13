@@ -1,0 +1,1394 @@
+{
+  "estimando": "ATE de treatment sobre outcome (efecto total)",
+  "poblacion": "los 448 individuos de observed_train.csv del escenario synthetic/ihdp (versión de entrenamiento, hash verificado)",
+  "supuestos": [
+    {
+      "nombre": "no confusión condicional en las 25 covariables pre-tratamiento",
+      "clase": "no_observable",
+      "tratamiento": "se declara; la identificación lo exige y ningún dato lo verifica"
+    },
+    {
+      "nombre": "soporte común (0 < e(X) < 1)",
+      "clase": "observable",
+      "tratamiento": "se mide: rango de e, ESS de Kish y fracción en zona de solapamiento"
+    },
+    {
+      "nombre": "consistencia / SUTVA",
+      "clase": "no_observable",
+      "tratamiento": "se declara; heredado del diseño del escenario"
+    },
+    {
+      "nombre": "covariables medidas antes del tratamiento",
+      "clase": "observable",
+      "tratamiento": "el benchmark lo declara; la trampa score_post muestra qué pasa si no"
+    }
+  ],
+  "umbrales": {
+    "smd_max": 0.5,
+    "smd_ponderado_max": 0.25,
+    "psi_alerta": 0.25,
+    "solape_min": 0.3,
+    "efecto_estabilidad": 0.2
+  },
+  "semilla": 4242,
+  "dataset_sha256": "9af867184cb26c7f528e792661fae1836ea342c42010fa79ea27a8c67b80825d",
+  "estimador": "AIPW con cross-fitting K=5 (doblemente robusto); OLS solo de referencia",
+  "uso_previsto": "Docencia y benchmark sintético. No usar para decisiones clínicas, laborales ni de política pública real.",
+  "limitaciones": [
+    "Datos sintéticos: los supuestos se sostienen por diseño del DGP, no por evidencia de datos reales.",
+    "Modelos de resultado y propensión lineales/logísticos; sin learners no lineales ni repeated cross-fitting.",
+    "La proyección por perfil no es un efecto individual, un CATE identificado ni una recomendación personal; su R² es bajo.",
+    "El placebo y el control negativo son diagnósticos de calibración, no pruebas de ignorabilidad.",
+    "Los umbrales del monitor son convenciones iniciales, no leyes universales; el análisis ±20 % solo explora sensibilidad local.",
+    "Los rangos y recortes de propensión no demuestran positividad poblacional ni soporte multivariable.",
+    "El E-value no cubre mala especificación, falta de positividad, selección, error de medición ni violaciones de SUTVA.",
+    "Rosenbaum Γ caracteriza el Wilcoxon de pares retenidos, depende del emparejamiento y no es una cota de sensibilidad del ATE AIPW."
+  ],
+  "soporte": {
+    "rango_propension": [
+      0.042967211161519976,
+      0.9164360340195433
+    ],
+    "ess": 332.2076014743631,
+    "ess_sobre_n": 0.7415348247195606,
+    "fraccion_solapamiento": 0.9977678571428571,
+    "regla_abstencion": "fuera del rango observado de entrenamiento, el servicio se abstiene y no devuelve número"
+  },
+  "puerta": {
+    "estado_registro": "pasa",
+    "umbrales": {
+      "smd_max": 0.5,
+      "smd_ponderado_max": 0.25,
+      "psi_alerta": 0.25,
+      "solape_min": 0.3,
+      "efecto_estabilidad": 0.2
+    },
+    "acciones": {
+      "continuar": "todo dentro de umbral",
+      "alertar": "revisar balance o estabilidad del efecto antes de reentrenar",
+      "revisar_identificacion": "placebo o control negativo falla: revisar identificación",
+      "reentrenar": "deriva de covariables: reentrenar con datos recientes",
+      "abstenerse": "soporte insuficiente: no devolver número"
+    },
+    "nota": "el monitor puede actualizar el estado; el servicio lee artifacts/monitor_estado.json y cae al manifiesto si no existe"
+  },
+  "sensibilidad": {
+    "e_value": {
+      "metodo": "E-value para efecto continuo estandarizado (aprox. RR de Chinn/VanderWeele)",
+      "ate": 5.156995119845635,
+      "sd_y": 15.044418993534649,
+      "efecto_estandarizado": 0.3427845981996286,
+      "e_value_punto": 2.07321918229489,
+      "e_value_ic": 1.8517641804511555,
+      "limite_ic_usado": 3.9300630180948044,
+      "supuestos": "Resultado continuo; RR aproximada vía d estandarizado. No es una razón de riesgos literal.",
+      "lectura": "Un confusor no medido tendría que asociarse con D y Y, condicionando en X, con una razón de riesgos aproximada de al menos 2.07 para explicar el efecto puntual; el límite del IC más cercano a cero exige al menos 1.85.",
+      "que_responde": "Fuerza mínima de asociación que un confusor no observado tendría que tener con tratamiento y resultado, bajo los supuestos y aproximaciones de la medida, para explicar el estimando o el límite del intervalo.",
+      "limites": "Para resultado continuo usa RR ≈ exp(0.91·d): no es una RR literal ni una cota exacta. No demuestra ausencia de confusión ni cubre mala especificación, selección, error de medición, falta de positividad o dependencia entre unidades. Se complementa con el valor de robustez del OLS."
+    },
+    "valor_robustez_ols": {
+      "metodo": "Valor de robustez de Cinelli & Hazlett (2020)",
+      "t": 9.706141449461933,
+      "df": 421,
+      "q": 1.0,
+      "rv": 0.37421297744876625,
+      "rv_pct": 37.421297744876625,
+      "lectura": "Un confusor no medido tendría que explicar al menos 37.4 % del R² parcial de D y de Y, después de condicionar en X, para llevar el coeficiente OLS a cero.",
+      "limites": "Exacto bajo el modelo lineal de sesgo por omisión para el OLS; no es una propiedad exacta del AIPW."
+    },
+    "lectura": "E-value puntual 2.07 (IC 1.85); valor de robustez OLS 37.4 %.",
+    "limites": "Las dos medidas son cotas de sensibilidad, no pruebas de ignorabilidad. El E-value es aproximado para resultado continuo; el valor de robustez es exacto solo para el OLS.",
+    "rosenbaum": {
+      "metodo": "Rosenbaum Γ: Wilcoxon signed-rank en pares 1:1, aproximación normal",
+      "aplicable": true,
+      "objeto": "contraste de pares emparejados retenidos; no es una cota del ATE AIPW",
+      "gamma": 2.209331829208006,
+      "p_gamma_1": 1.8651752443174538e-09,
+      "p_gamma_cota": 0.05000000000000001,
+      "alpha": 0.05,
+      "gamma_max_busqueda": 100.0,
+      "n_pares": 179,
+      "n_diferencias_cero": 0,
+      "n_tratados_original": 191,
+      "n_controles_original": 257,
+      "n_pares_descartados": 12,
+      "diseno_emparejamiento": {
+        "metodo": "greedy por orden de tratado, vecino más próximo, sin reemplazo",
+        "distancia": "distancia absoluta en logit de propensiones OOF sin trimming",
+        "caliper_sd": 0.2,
+        "sd_logit": 0.8541140154391226,
+        "caliper": 0.17082280308782452,
+        "criterio_ties": "índice original creciente del control",
+        "pares_indices": [
+          {
+            "tratado": 1,
+            "control": 263,
+            "distancia_logit": 0.0032343561407205956
+          },
+          {
+            "tratado": 3,
+            "control": 88,
+            "distancia_logit": 0.00028227995212254386
+          },
+          {
+            "tratado": 6,
+            "control": 365,
+            "distancia_logit": 0.0016766253945933451
+          },
+          {
+            "tratado": 11,
+            "control": 378,
+            "distancia_logit": 0.01113141521414647
+          },
+          {
+            "tratado": 13,
+            "control": 429,
+            "distancia_logit": 0.008228786580690595
+          },
+          {
+            "tratado": 21,
+            "control": 261,
+            "distancia_logit": 0.009255558850785023
+          },
+          {
+            "tratado": 22,
+            "control": 403,
+            "distancia_logit": 0.003755751411087936
+          },
+          {
+            "tratado": 23,
+            "control": 234,
+            "distancia_logit": 0.0019036044770304184
+          },
+          {
+            "tratado": 26,
+            "control": 93,
+            "distancia_logit": 0.0041824550085528545
+          },
+          {
+            "tratado": 28,
+            "control": 401,
+            "distancia_logit": 0.005866696335935839
+          },
+          {
+            "tratado": 29,
+            "control": 376,
+            "distancia_logit": 0.013308507320210938
+          },
+          {
+            "tratado": 30,
+            "control": 206,
+            "distancia_logit": 0.01592861467136042
+          },
+          {
+            "tratado": 32,
+            "control": 126,
+            "distancia_logit": 0.0012736971615924242
+          },
+          {
+            "tratado": 33,
+            "control": 31,
+            "distancia_logit": 0.006783455492335444
+          },
+          {
+            "tratado": 35,
+            "control": 253,
+            "distancia_logit": 0.01016983891458572
+          },
+          {
+            "tratado": 36,
+            "control": 409,
+            "distancia_logit": 0.06002013462344957
+          },
+          {
+            "tratado": 42,
+            "control": 341,
+            "distancia_logit": 0.018475674028691103
+          },
+          {
+            "tratado": 43,
+            "control": 136,
+            "distancia_logit": 8.547886069998345e-05
+          },
+          {
+            "tratado": 48,
+            "control": 106,
+            "distancia_logit": 0.0025224006447568392
+          },
+          {
+            "tratado": 50,
+            "control": 211,
+            "distancia_logit": 0.020119994546551445
+          },
+          {
+            "tratado": 51,
+            "control": 114,
+            "distancia_logit": 0.005637617991104182
+          },
+          {
+            "tratado": 55,
+            "control": 332,
+            "distancia_logit": 0.017186152883209793
+          },
+          {
+            "tratado": 62,
+            "control": 426,
+            "distancia_logit": 0.005882345053201954
+          },
+          {
+            "tratado": 64,
+            "control": 17,
+            "distancia_logit": 0.0596208088403255
+          },
+          {
+            "tratado": 65,
+            "control": 15,
+            "distancia_logit": 0.06782688017744354
+          },
+          {
+            "tratado": 71,
+            "control": 165,
+            "distancia_logit": 0.005106344294216081
+          },
+          {
+            "tratado": 76,
+            "control": 24,
+            "distancia_logit": 0.006555659862840041
+          },
+          {
+            "tratado": 78,
+            "control": 145,
+            "distancia_logit": 0.0021427845347507107
+          },
+          {
+            "tratado": 79,
+            "control": 331,
+            "distancia_logit": 0.006276228077852775
+          },
+          {
+            "tratado": 80,
+            "control": 383,
+            "distancia_logit": 0.006977769583911053
+          },
+          {
+            "tratado": 81,
+            "control": 59,
+            "distancia_logit": 0.007898680388786716
+          },
+          {
+            "tratado": 82,
+            "control": 212,
+            "distancia_logit": 0.0037415880552447156
+          },
+          {
+            "tratado": 83,
+            "control": 241,
+            "distancia_logit": 0.02942340678518751
+          },
+          {
+            "tratado": 85,
+            "control": 215,
+            "distancia_logit": 0.04171782669654389
+          },
+          {
+            "tratado": 89,
+            "control": 346,
+            "distancia_logit": 0.0498505527369284
+          },
+          {
+            "tratado": 92,
+            "control": 12,
+            "distancia_logit": 0.0053480840789010995
+          },
+          {
+            "tratado": 94,
+            "control": 425,
+            "distancia_logit": 0.0012915303451666027
+          },
+          {
+            "tratado": 97,
+            "control": 218,
+            "distancia_logit": 0.008393159444393672
+          },
+          {
+            "tratado": 98,
+            "control": 4,
+            "distancia_logit": 0.011622818509488209
+          },
+          {
+            "tratado": 99,
+            "control": 322,
+            "distancia_logit": 0.002853017622985732
+          },
+          {
+            "tratado": 101,
+            "control": 329,
+            "distancia_logit": 0.00032373358996473645
+          },
+          {
+            "tratado": 102,
+            "control": 53,
+            "distancia_logit": 0.003013398297822212
+          },
+          {
+            "tratado": 103,
+            "control": 14,
+            "distancia_logit": 0.004183073686713057
+          },
+          {
+            "tratado": 104,
+            "control": 108,
+            "distancia_logit": 0.013983622033585164
+          },
+          {
+            "tratado": 112,
+            "control": 109,
+            "distancia_logit": 0.10249886723055213
+          },
+          {
+            "tratado": 113,
+            "control": 381,
+            "distancia_logit": 0.0033866954125221227
+          },
+          {
+            "tratado": 115,
+            "control": 273,
+            "distancia_logit": 0.0020749445141005074
+          },
+          {
+            "tratado": 119,
+            "control": 338,
+            "distancia_logit": 0.042289098648082946
+          },
+          {
+            "tratado": 121,
+            "control": 406,
+            "distancia_logit": 0.02751208684218953
+          },
+          {
+            "tratado": 123,
+            "control": 40,
+            "distancia_logit": 0.012873960077598522
+          },
+          {
+            "tratado": 124,
+            "control": 8,
+            "distancia_logit": 0.005571319948873832
+          },
+          {
+            "tratado": 125,
+            "control": 140,
+            "distancia_logit": 0.014206613281474448
+          },
+          {
+            "tratado": 127,
+            "control": 179,
+            "distancia_logit": 0.0021613612723573317
+          },
+          {
+            "tratado": 128,
+            "control": 67,
+            "distancia_logit": 0.005689626332896047
+          },
+          {
+            "tratado": 129,
+            "control": 407,
+            "distancia_logit": 0.0006995125232413524
+          },
+          {
+            "tratado": 135,
+            "control": 303,
+            "distancia_logit": 0.12477730660926489
+          },
+          {
+            "tratado": 139,
+            "control": 312,
+            "distancia_logit": 0.0014409029547639562
+          },
+          {
+            "tratado": 141,
+            "control": 9,
+            "distancia_logit": 0.009001304643386665
+          },
+          {
+            "tratado": 142,
+            "control": 156,
+            "distancia_logit": 0.016728420191273276
+          },
+          {
+            "tratado": 144,
+            "control": 75,
+            "distancia_logit": 0.018645281722580176
+          },
+          {
+            "tratado": 146,
+            "control": 288,
+            "distancia_logit": 0.0014360631841053295
+          },
+          {
+            "tratado": 149,
+            "control": 46,
+            "distancia_logit": 0.01196162638009679
+          },
+          {
+            "tratado": 152,
+            "control": 227,
+            "distancia_logit": 0.00011630493447695178
+          },
+          {
+            "tratado": 158,
+            "control": 155,
+            "distancia_logit": 0.023213989514869082
+          },
+          {
+            "tratado": 160,
+            "control": 293,
+            "distancia_logit": 0.007450415405964694
+          },
+          {
+            "tratado": 163,
+            "control": 161,
+            "distancia_logit": 0.007235410093133443
+          },
+          {
+            "tratado": 164,
+            "control": 214,
+            "distancia_logit": 0.010069623436424813
+          },
+          {
+            "tratado": 168,
+            "control": 130,
+            "distancia_logit": 0.07260792153035778
+          },
+          {
+            "tratado": 171,
+            "control": 0,
+            "distancia_logit": 0.01741549483433208
+          },
+          {
+            "tratado": 172,
+            "control": 418,
+            "distancia_logit": 0.013462019200280562
+          },
+          {
+            "tratado": 173,
+            "control": 27,
+            "distancia_logit": 0.02824692665863754
+          },
+          {
+            "tratado": 177,
+            "control": 52,
+            "distancia_logit": 0.013653930003334758
+          },
+          {
+            "tratado": 180,
+            "control": 236,
+            "distancia_logit": 0.0215602139286441
+          },
+          {
+            "tratado": 183,
+            "control": 182,
+            "distancia_logit": 0.017327128927039692
+          },
+          {
+            "tratado": 184,
+            "control": 252,
+            "distancia_logit": 0.021563453147766642
+          },
+          {
+            "tratado": 185,
+            "control": 57,
+            "distancia_logit": 0.015293236335745919
+          },
+          {
+            "tratado": 186,
+            "control": 162,
+            "distancia_logit": 0.006386537796942704
+          },
+          {
+            "tratado": 187,
+            "control": 181,
+            "distancia_logit": 0.009613540777702614
+          },
+          {
+            "tratado": 189,
+            "control": 10,
+            "distancia_logit": 0.007768026984730447
+          },
+          {
+            "tratado": 195,
+            "control": 369,
+            "distancia_logit": 0.0017067282835414588
+          },
+          {
+            "tratado": 196,
+            "control": 217,
+            "distancia_logit": 0.002371475831117978
+          },
+          {
+            "tratado": 197,
+            "control": 357,
+            "distancia_logit": 0.00897479275688956
+          },
+          {
+            "tratado": 198,
+            "control": 18,
+            "distancia_logit": 0.0013415071190642225
+          },
+          {
+            "tratado": 199,
+            "control": 347,
+            "distancia_logit": 0.005294124179120008
+          },
+          {
+            "tratado": 200,
+            "control": 122,
+            "distancia_logit": 0.03622427045886413
+          },
+          {
+            "tratado": 203,
+            "control": 72,
+            "distancia_logit": 0.006405238965470628
+          },
+          {
+            "tratado": 207,
+            "control": 37,
+            "distancia_logit": 0.0020326812898556756
+          },
+          {
+            "tratado": 208,
+            "control": 91,
+            "distancia_logit": 0.026905390384722505
+          },
+          {
+            "tratado": 216,
+            "control": 314,
+            "distancia_logit": 0.006682423330036991
+          },
+          {
+            "tratado": 219,
+            "control": 386,
+            "distancia_logit": 0.0032877759392775374
+          },
+          {
+            "tratado": 220,
+            "control": 249,
+            "distancia_logit": 0.00041649416148603624
+          },
+          {
+            "tratado": 221,
+            "control": 2,
+            "distancia_logit": 0.0005449421675239874
+          },
+          {
+            "tratado": 222,
+            "control": 412,
+            "distancia_logit": 0.05056096053532766
+          },
+          {
+            "tratado": 225,
+            "control": 170,
+            "distancia_logit": 0.008327639310711302
+          },
+          {
+            "tratado": 226,
+            "control": 440,
+            "distancia_logit": 0.02282378999134027
+          },
+          {
+            "tratado": 229,
+            "control": 74,
+            "distancia_logit": 0.02921971971088888
+          },
+          {
+            "tratado": 230,
+            "control": 254,
+            "distancia_logit": 0.000604372052306068
+          },
+          {
+            "tratado": 231,
+            "control": 166,
+            "distancia_logit": 0.020601509880014857
+          },
+          {
+            "tratado": 232,
+            "control": 326,
+            "distancia_logit": 0.0196116695921722
+          },
+          {
+            "tratado": 239,
+            "control": 305,
+            "distancia_logit": 0.05381119912791357
+          },
+          {
+            "tratado": 243,
+            "control": 359,
+            "distancia_logit": 0.024258771630614184
+          },
+          {
+            "tratado": 244,
+            "control": 377,
+            "distancia_logit": 0.010686090594171027
+          },
+          {
+            "tratado": 245,
+            "control": 395,
+            "distancia_logit": 0.05090461539847235
+          },
+          {
+            "tratado": 246,
+            "control": 260,
+            "distancia_logit": 0.0015372760256825435
+          },
+          {
+            "tratado": 247,
+            "control": 210,
+            "distancia_logit": 0.04421567258346082
+          },
+          {
+            "tratado": 248,
+            "control": 174,
+            "distancia_logit": 0.0007737938607144945
+          },
+          {
+            "tratado": 250,
+            "control": 307,
+            "distancia_logit": 0.010621301040594
+          },
+          {
+            "tratado": 255,
+            "control": 202,
+            "distancia_logit": 0.010987045974429066
+          },
+          {
+            "tratado": 258,
+            "control": 317,
+            "distancia_logit": 0.050167021818597765
+          },
+          {
+            "tratado": 259,
+            "control": 204,
+            "distancia_logit": 0.012008497122707906
+          },
+          {
+            "tratado": 264,
+            "control": 19,
+            "distancia_logit": 0.024750070813958417
+          },
+          {
+            "tratado": 265,
+            "control": 270,
+            "distancia_logit": 0.02731060410597078
+          },
+          {
+            "tratado": 266,
+            "control": 84,
+            "distancia_logit": 0.0011020332202564265
+          },
+          {
+            "tratado": 269,
+            "control": 257,
+            "distancia_logit": 0.025423969172794353
+          },
+          {
+            "tratado": 271,
+            "control": 61,
+            "distancia_logit": 0.02629524977862091
+          },
+          {
+            "tratado": 278,
+            "control": 287,
+            "distancia_logit": 0.06502429489975153
+          },
+          {
+            "tratado": 281,
+            "control": 367,
+            "distancia_logit": 0.005122502574913312
+          },
+          {
+            "tratado": 285,
+            "control": 388,
+            "distancia_logit": 0.009473190965296807
+          },
+          {
+            "tratado": 289,
+            "control": 274,
+            "distancia_logit": 0.0002800583662860845
+          },
+          {
+            "tratado": 290,
+            "control": 77,
+            "distancia_logit": 0.062212257835748686
+          },
+          {
+            "tratado": 291,
+            "control": 343,
+            "distancia_logit": 0.16123469987548233
+          },
+          {
+            "tratado": 292,
+            "control": 192,
+            "distancia_logit": 0.0027256894846270363
+          },
+          {
+            "tratado": 295,
+            "control": 277,
+            "distancia_logit": 0.0014566258312733171
+          },
+          {
+            "tratado": 296,
+            "control": 176,
+            "distancia_logit": 0.029187167100506173
+          },
+          {
+            "tratado": 297,
+            "control": 323,
+            "distancia_logit": 0.032961159507758964
+          },
+          {
+            "tratado": 298,
+            "control": 138,
+            "distancia_logit": 0.07192700358962545
+          },
+          {
+            "tratado": 300,
+            "control": 175,
+            "distancia_logit": 0.06858486174025202
+          },
+          {
+            "tratado": 306,
+            "control": 434,
+            "distancia_logit": 0.04731214397876937
+          },
+          {
+            "tratado": 308,
+            "control": 133,
+            "distancia_logit": 0.03353471534112251
+          },
+          {
+            "tratado": 309,
+            "control": 25,
+            "distancia_logit": 0.0246542051653611
+          },
+          {
+            "tratado": 310,
+            "control": 240,
+            "distancia_logit": 0.03376242069085911
+          },
+          {
+            "tratado": 315,
+            "control": 235,
+            "distancia_logit": 0.003923013924877955
+          },
+          {
+            "tratado": 316,
+            "control": 432,
+            "distancia_logit": 0.0004384307569678114
+          },
+          {
+            "tratado": 325,
+            "control": 159,
+            "distancia_logit": 0.10196568463753841
+          },
+          {
+            "tratado": 327,
+            "control": 396,
+            "distancia_logit": 0.017156254345865873
+          },
+          {
+            "tratado": 333,
+            "control": 372,
+            "distancia_logit": 0.0038683147398586026
+          },
+          {
+            "tratado": 334,
+            "control": 116,
+            "distancia_logit": 0.0734168125587768
+          },
+          {
+            "tratado": 335,
+            "control": 169,
+            "distancia_logit": 0.08093252123768727
+          },
+          {
+            "tratado": 339,
+            "control": 154,
+            "distancia_logit": 0.024875607958317406
+          },
+          {
+            "tratado": 340,
+            "control": 213,
+            "distancia_logit": 0.03610231841941425
+          },
+          {
+            "tratado": 344,
+            "control": 34,
+            "distancia_logit": 0.00014265580260408584
+          },
+          {
+            "tratado": 345,
+            "control": 66,
+            "distancia_logit": 0.018714330420787822
+          },
+          {
+            "tratado": 349,
+            "control": 356,
+            "distancia_logit": 0.05944176519054112
+          },
+          {
+            "tratado": 350,
+            "control": 237,
+            "distancia_logit": 0.00706860416907773
+          },
+          {
+            "tratado": 354,
+            "control": 447,
+            "distancia_logit": 0.022794993394651963
+          },
+          {
+            "tratado": 355,
+            "control": 107,
+            "distancia_logit": 0.04284025890186599
+          },
+          {
+            "tratado": 361,
+            "control": 267,
+            "distancia_logit": 0.039402391304523
+          },
+          {
+            "tratado": 363,
+            "control": 134,
+            "distancia_logit": 0.007831139390456432
+          },
+          {
+            "tratado": 364,
+            "control": 437,
+            "distancia_logit": 0.0057954702898815325
+          },
+          {
+            "tratado": 375,
+            "control": 111,
+            "distancia_logit": 0.023317323019774502
+          },
+          {
+            "tratado": 379,
+            "control": 132,
+            "distancia_logit": 0.004694731183168266
+          },
+          {
+            "tratado": 380,
+            "control": 209,
+            "distancia_logit": 0.013931353636104371
+          },
+          {
+            "tratado": 384,
+            "control": 286,
+            "distancia_logit": 0.007118270071848176
+          },
+          {
+            "tratado": 387,
+            "control": 143,
+            "distancia_logit": 0.03362891140217272
+          },
+          {
+            "tratado": 389,
+            "control": 110,
+            "distancia_logit": 0.004686601419842784
+          },
+          {
+            "tratado": 390,
+            "control": 151,
+            "distancia_logit": 0.0012129391280666368
+          },
+          {
+            "tratado": 391,
+            "control": 430,
+            "distancia_logit": 0.1328489516840825
+          },
+          {
+            "tratado": 392,
+            "control": 441,
+            "distancia_logit": 0.04020863135110364
+          },
+          {
+            "tratado": 394,
+            "control": 201,
+            "distancia_logit": 0.014443563344969386
+          },
+          {
+            "tratado": 397,
+            "control": 193,
+            "distancia_logit": 0.001754843441235554
+          },
+          {
+            "tratado": 398,
+            "control": 348,
+            "distancia_logit": 0.005731716585538005
+          },
+          {
+            "tratado": 400,
+            "control": 16,
+            "distancia_logit": 0.1106759888077018
+          },
+          {
+            "tratado": 402,
+            "control": 190,
+            "distancia_logit": 0.002822116861008195
+          },
+          {
+            "tratado": 404,
+            "control": 279,
+            "distancia_logit": 0.09282316714283906
+          },
+          {
+            "tratado": 408,
+            "control": 370,
+            "distancia_logit": 0.09882134691985434
+          },
+          {
+            "tratado": 413,
+            "control": 7,
+            "distancia_logit": 0.00012269634699313414
+          },
+          {
+            "tratado": 414,
+            "control": 38,
+            "distancia_logit": 0.0019444536567859994
+          },
+          {
+            "tratado": 416,
+            "control": 352,
+            "distancia_logit": 0.14761978873015713
+          },
+          {
+            "tratado": 419,
+            "control": 302,
+            "distancia_logit": 0.005733584978026229
+          },
+          {
+            "tratado": 420,
+            "control": 362,
+            "distancia_logit": 0.015937422756510444
+          },
+          {
+            "tratado": 421,
+            "control": 360,
+            "distancia_logit": 0.0029849683802882776
+          },
+          {
+            "tratado": 422,
+            "control": 45,
+            "distancia_logit": 0.008598196652525703
+          },
+          {
+            "tratado": 424,
+            "control": 251,
+            "distancia_logit": 0.09862805532222219
+          },
+          {
+            "tratado": 427,
+            "control": 282,
+            "distancia_logit": 0.03489318307076772
+          },
+          {
+            "tratado": 428,
+            "control": 382,
+            "distancia_logit": 0.006105321583870005
+          },
+          {
+            "tratado": 431,
+            "control": 96,
+            "distancia_logit": 0.001292312455505984
+          },
+          {
+            "tratado": 433,
+            "control": 105,
+            "distancia_logit": 0.014798417288483967
+          },
+          {
+            "tratado": 436,
+            "control": 5,
+            "distancia_logit": 0.005734562500809337
+          },
+          {
+            "tratado": 445,
+            "control": 70,
+            "distancia_logit": 0.005101592369030072
+          }
+        ]
+      },
+      "estadistico": "suma de rangos promedio de diferencias positivas; ceros excluidos",
+      "direccion": "unilateral: efecto positivo, sin corrección de continuidad",
+      "supuestos": "Consistencia/SUTVA, independencia entre pares y asignación dentro de cada par; las odds ocultas dentro de un par están acotadas entre 1/Γ y Γ.",
+      "lectura": "El contraste emparejado deja de rechazar la nula al 5 % en Γ ≈ 2.21: odds de asignación desiguales de esa magnitud ya podrían explicar el resultado de Wilcoxon.",
+      "referencia": "Rosenbaum (1987), Biometrika 74(1), 13–26; Rosenbaum (2002), Observational Studies, 2.ª ed., sección 4.3.3.",
+      "limites": "No es una cota de sensibilidad del ATE AIPW ni cubre mala especificación o falta de soporte. El resultado depende del emparejamiento, caliper y aproximación normal; Γ=1 supone asignación aleatoria dentro de los pares."
+    },
+    "cotas_manski": {
+      "metodo": "cotas de Manski sin ignorabilidad condicional",
+      "aplicable": true,
+      "n": 448,
+      "p_tratados": 0.4263392857142857,
+      "media_y_d1": 56.95834547192459,
+      "media_y_d0": 46.63163455624416,
+      "soporte_y": [
+        10.407453515705225,
+        96.54062761033518
+      ],
+      "fuente_soporte": "mínimo y máximo observados en observed_train.csv",
+      "soporte_observado": true,
+      "e_y1": [
+        30.253927541682675,
+        79.66514571650387
+      ],
+      "e_y0": [
+        31.18784308583582,
+        67.90979900564457
+      ],
+      "ate": [
+        -37.6558714639619,
+        48.47730263066805
+      ],
+      "ancho": 86.13317409462995,
+      "incluye_cero": true,
+      "identificacion_puntual": false,
+      "supuestos": "Consistencia/SUTVA, tratamiento binario y resultado acotado en el soporte indicado. No se supone ignorabilidad condicional.",
+      "lectura": "Sin ignorabilidad condicional, el ATE queda entre -37.66 y 48.48; el intervalo tiene ancho 86.13 y no identifica un valor puntual.",
+      "limites": "El rango observado no garantiza el soporte poblacional: sin un soporte externo declarado, estas cotas son una ilustración de sensibilidad y pueden ser más estrechas que las cotas poblacionales."
+    }
+  },
+  "placebo": {
+    "pasa": true,
+    "tratamiento_permutado_pasa": true,
+    "resultado_permutado_pasa": true,
+    "tratamiento_permutado": {
+      "metodo": "placebo de tratamiento permutado (AIPW, pliegues fijos)",
+      "n_rep": 200,
+      "semilla": 4242,
+      "ate_observado": 5.156995119845635,
+      "placebo_media": -0.04062421218076927,
+      "placebo_sd": 0.6187756148164905,
+      "placebo_ic95": [
+        -1.4158668205255567,
+        1.0571229441726282
+      ],
+      "percentil_observado": 100.0,
+      "p_valor_aprox": 0.004975124378109453,
+      "dentro_del_ic_placebo": false,
+      "placebo_ok": true,
+      "lectura": "Bajo efecto cero, los placebo se centran en -0.04 (DE 0.62); el ATE observado (5.16) está en el percentil 100.0 (p Monte Carlo = 0.005).",
+      "que_no_prueba": "No prueba ignorabilidad: un estimador confundido también puede rechazar la nula de placebo. Evalúa calibración e implementación."
+    },
+    "resultado_permutado": {
+      "metodo": "placebo de resultado permutado",
+      "variable_base": "momage",
+      "variable_permutada": "__placebo_outcome__",
+      "efecto": 0.042912425120899274,
+      "ic95": [
+        -0.2312895159533132,
+        0.31711436619511174
+      ],
+      "sd_variable": 1.0326346026832693,
+      "umbral_material": 0.10326346026832695,
+      "dentro_de_cero": true,
+      "material": false,
+      "control_negativo_ok": true,
+      "lectura": "Se permutó momage y se usó como pseudo-resultado: efecto 0.04 (IC 95 % [-0.23, 0.32]). Umbral material: 0.10.",
+      "que_no_prueba": "No prueba ignorabilidad ni ausencia de confusión. Es un diagnóstico de calibración con un resultado sin relación causal con D."
+    }
+  },
+  "identificacion": {
+    "aplicable": true,
+    "criterio_principal": "backdoor",
+    "criterio_backdoor_pasa": true,
+    "identificacion_pasa": true,
+    "metodos_dowhy": {
+      "conjunto_backdoor": "default",
+      "expresion_estimando": "id-algorithm"
+    },
+    "criterio": "Grafo causal explícito (X→D, X→Y, D→Y con X pre-tratamiento): DoWhy `default` aplica criterio backdoor y devuelve el conjunto de ajuste; `id-algorithm` devuelve la expresión ID (Pearl) del ATE.",
+    "fuente_conjunto": "IdentifiedEstimand.get_backdoor_variables()",
+    "conjunto_ajuste_estimado": [
+      "ark",
+      "b.head",
+      "b.marr",
+      "birth.o",
+      "booze",
+      "bw",
+      "cig",
+      "drugs",
+      "ein",
+      "first",
+      "har",
+      "mia",
+      "mom.hs",
+      "mom.lths",
+      "mom.scoll",
+      "momage",
+      "nnhealth",
+      "pen",
+      "prenatal",
+      "preterm",
+      "sex",
+      "tex",
+      "twin",
+      "was",
+      "work.dur"
+    ],
+    "efecto_identificable_por_grafo": true,
+    "coincide_valid_adjustment_sets": true,
+    "identification_status_benchmark": "identifiable_by_design_all_simulated_confounders_observed_assumption",
+    "grafo_dot": "strict digraph {\nbw;\ntreatment;\noutcome;\n\"b.head\";\npreterm;\n\"birth.o\";\nnnhealth;\nmomage;\nsex;\ntwin;\n\"b.marr\";\n\"mom.lths\";\n\"mom.hs\";\n\"mom.scoll\";\ncig;\nfirst;\nbooze;\ndrugs;\n\"work.dur\";\nprenatal;\nark;\nein;\nhar;\nmia;\npen;\ntex;\nwas;\nbw -> treatment;\nbw -> outcome;\ntreatment -> outcome;\n\"b.head\" -> treatment;\n\"b.head\" -> outcome;\npreterm -> treatment;\npreterm -> outcome;\n\"birth.o\" -> treatment;\n\"birth.o\" -> outcome;\nnnhealth -> treatment;\nnnhealth -> outcome;\nmomage -> treatment;\nmomage -> outcome;\nsex -> treatment;\nsex -> outcome;\ntwin -> treatment;\ntwin -> outcome;\n\"b.marr\" -> treatment;\n\"b.marr\" -> outcome;\n\"mom.lths\" -> treatment;\n\"mom.lths\" -> outcome;\n\"mom.hs\" -> treatment;\n\"mom.hs\" -> outcome;\n\"mom.scoll\" -> treatment;\n\"mom.scoll\" -> outcome;\ncig -> treatment;\ncig -> outcome;\nfirst -> treatment;\nfirst -> outcome;\nbooze -> treatment;\nbooze -> outcome;\ndrugs -> treatment;\ndrugs -> outcome;\n\"work.dur\" -> treatment;\n\"work.dur\" -> outcome;\nprenatal -> treatment;\nprenatal -> outcome;\nark -> treatment;\nark -> outcome;\nein -> treatment;\nein -> outcome;\nhar -> treatment;\nhar -> outcome;\nmia -> treatment;\nmia -> outcome;\npen -> treatment;\npen -> outcome;\ntex -> treatment;\ntex -> outcome;\nwas -> treatment;\nwas -> outcome;\n}\n",
+    "aristas": [
+      [
+        "bw",
+        "treatment"
+      ],
+      [
+        "bw",
+        "outcome"
+      ],
+      [
+        "treatment",
+        "outcome"
+      ],
+      [
+        "b.head",
+        "treatment"
+      ],
+      [
+        "b.head",
+        "outcome"
+      ],
+      [
+        "preterm",
+        "treatment"
+      ],
+      [
+        "preterm",
+        "outcome"
+      ],
+      [
+        "birth.o",
+        "treatment"
+      ],
+      [
+        "birth.o",
+        "outcome"
+      ],
+      [
+        "nnhealth",
+        "treatment"
+      ],
+      [
+        "nnhealth",
+        "outcome"
+      ],
+      [
+        "momage",
+        "treatment"
+      ],
+      [
+        "momage",
+        "outcome"
+      ],
+      [
+        "sex",
+        "treatment"
+      ],
+      [
+        "sex",
+        "outcome"
+      ],
+      [
+        "twin",
+        "treatment"
+      ],
+      [
+        "twin",
+        "outcome"
+      ],
+      [
+        "b.marr",
+        "treatment"
+      ],
+      [
+        "b.marr",
+        "outcome"
+      ],
+      [
+        "mom.lths",
+        "treatment"
+      ],
+      [
+        "mom.lths",
+        "outcome"
+      ],
+      [
+        "mom.hs",
+        "treatment"
+      ],
+      [
+        "mom.hs",
+        "outcome"
+      ],
+      [
+        "mom.scoll",
+        "treatment"
+      ],
+      [
+        "mom.scoll",
+        "outcome"
+      ],
+      [
+        "cig",
+        "treatment"
+      ],
+      [
+        "cig",
+        "outcome"
+      ],
+      [
+        "first",
+        "treatment"
+      ],
+      [
+        "first",
+        "outcome"
+      ],
+      [
+        "booze",
+        "treatment"
+      ],
+      [
+        "booze",
+        "outcome"
+      ],
+      [
+        "drugs",
+        "treatment"
+      ],
+      [
+        "drugs",
+        "outcome"
+      ],
+      [
+        "work.dur",
+        "treatment"
+      ],
+      [
+        "work.dur",
+        "outcome"
+      ],
+      [
+        "prenatal",
+        "treatment"
+      ],
+      [
+        "prenatal",
+        "outcome"
+      ],
+      [
+        "ark",
+        "treatment"
+      ],
+      [
+        "ark",
+        "outcome"
+      ],
+      [
+        "ein",
+        "treatment"
+      ],
+      [
+        "ein",
+        "outcome"
+      ],
+      [
+        "har",
+        "treatment"
+      ],
+      [
+        "har",
+        "outcome"
+      ],
+      [
+        "mia",
+        "treatment"
+      ],
+      [
+        "mia",
+        "outcome"
+      ],
+      [
+        "pen",
+        "treatment"
+      ],
+      [
+        "pen",
+        "outcome"
+      ],
+      [
+        "tex",
+        "treatment"
+      ],
+      [
+        "tex",
+        "outcome"
+      ],
+      [
+        "was",
+        "treatment"
+      ],
+      [
+        "was",
+        "outcome"
+      ]
+    ],
+    "nota_grafo": "Solo covariables observadas pre-tratamiento → backdoor clásico; amenazas no observadas se acotan con E-value/placebos, no con este DAG.",
+    "resumen_identified_estimand": "Estimand type: EstimandType.NONPARAMETRIC_ATE\n\n### Estimand : 1\nEstimand name: backdoor\nEstimand expression:\n     d                                               ↪\n────────────(E[outcome|mom.scoll,drugs,mia,first,boo ↪\nd[treatment]                                         ↪\n\n↪                                                    ↪\n↪ ze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal ↪\n↪                                                    ↪\n\n↪                                                    ↪\n↪ ,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,s ↪\n↪                                                    ↪\n\n↪                         \n↪ ex,tex,was,cig,ark,pen])\n↪                         \nEstimand assumption 1, Unconfoundedness: If U→{treatment} and U→outcome then P(outcome|treatment,mom.scoll,drugs,mia,first,booze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,sex,tex,was,cig,ark,pen,U) = P(outcome|treatment,mom.scoll,drugs,mia,first,booze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,sex,tex,was,cig,ark,pen)\n\n### Estimand : 2\nEstimand name: iv\nNo such variable(s) found!\n\n### Estimand : 3\nEstimand name: frontdoor\nNo such variable(s) found!\n\n### Estimand : 4\nEstimand name: general_adjustment\nEstimand expression:\n     d                                               ↪\n────────────(E[outcome|mom.scoll,drugs,mia,first,boo ↪\nd[treatment]                                         ↪\n\n↪                                                    ↪\n↪ ze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal ↪\n↪                                                    ↪\n\n↪                                                    ↪\n↪ ,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,s ↪\n↪                                                    ↪\n\n↪                         \n↪ ex,tex,was,cig,ark,pen])\n↪                         \nEstimand assumption 1, Unconfoundedness: If U→{treatment} and U→outcome then P(outcome|treatment,mom.scoll,drugs,mia,first,booze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,sex,tex,was,cig,ark,pen,U) = P(outcome|treatment,mom.scoll,drugs,mia,first,booze,twin,mom.hs,work.dur,nnhealth,mom.lths,prenatal,b.marr,momage,ein,har,birth.o,bw,preterm,b.head,sex,tex,was,cig,ark,pen)\n",
+    "resumen_id_algorithm": "Sum over {bw,b.head,preterm,birth.o,nnhealth,momage,sex,twin,b.marr,mom.lths,mom.hs,mom.scoll,cig,first,booze,drugs,work.dur,prenatal,ark,ein,har,mia,pen,tex,was}:\n\tPredictor: P(bw)\n\tPredictor: P(outcome|bw,b.head,preterm,birth.o,nnhealth,momage,sex,twin,b.marr,mom.lths,mom.hs,mom.scoll,cig,first,booze,drugs,work.dur,prenatal,ark,ein,har,mia,pen,tex,was,treatment)\n\tPredictor: P(b.head)\n\tPredictor: P(preterm)\n\tPredictor: P(birth.o)\n\tPredictor: P(nnhealth)\n\tPredictor: P(momage)\n\tPredictor: P(sex)\n\tPredictor: P(twin)\n\tPredictor: P(b.marr)\n\tPredictor: P(mom.lths)\n\tPredictor: P(mom.hs)\n\tPredictor: P(mom.scoll)\n\tPredictor: P(cig)\n\tPredictor: P(first)\n\tPredictor: P(booze)\n\tPredictor: P(drugs)\n\tPredictor: P(work.dur)\n\tPredictor: P(prenatal)\n\tPredictor: P(ark)\n\tPredictor: P(ein)\n\tPredictor: P(har)\n\tPredictor: P(mia)\n\tPredictor: P(pen)\n\tPredictor: P(tex)\n\tPredictor: P(was)"
+  },
+  "validacion_particiones": {
+    "train": {
+      "n": 448,
+      "ate": 5.156995119845635,
+      "se": 0.6259857661994034,
+      "ic": [
+        3.9300630180948044,
+        6.3839272215964655
+      ]
+    },
+    "validation": {
+      "n": 149,
+      "ate": 1.9328044568922507,
+      "se": 2.2350779959061606,
+      "ic": [
+        -2.447948415083824,
+        6.313557328868326
+      ]
+    },
+    "test": {
+      "n": 150,
+      "ate": 1.6303903064119623,
+      "se": 2.829255968460622,
+      "ic": [
+        -3.9149513917708574,
+        7.175732004594781
+      ]
+    }
+  },
+  "heterogeneidad": {
+    "corte": "bw",
+    "umbral": -0.01334726950142505,
+    "regla": "corte único por peso al nacer (bw) en la mediana de train: es el eje clínico del IHDP (bajo peso al nacer define la población del estudio), declarado antes de mirar los efectos y NO elegido por ganancia de varianza; la mediana preserva tamaño en ambas hojas",
+    "nota": "los intervalos de los estratos no se solapan: diferencia consistente con el corte declarado, pero no es un CATE",
+    "modelo_individual": {
+      "tipo": "proyección lineal del score AIPW sobre las covariables",
+      "r2": 0.095,
+      "que_cubre": "heterogeneidad estimada por proyección lineal del score AIPW para un perfil; no es un CATE individual identificado"
+    },
+    "que_cubre": "media de scores AIPW del estrato, no un CATE individual"
+  },
+  "version_esquema": "1.2"
+}

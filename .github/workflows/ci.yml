@@ -23,7 +23,7 @@ jobs:
       - name: Dependencias
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
 
-      - name: verificar, pruebas y demo (real/ihdp)
+      - name: verificar, pruebas y demo (synthetic/ihdp)
         env:
-          SIC_ESCENARIO: real/ihdp
+          SIC_ESCENARIO: synthetic/ihdp
         run: make verificar pruebas demo

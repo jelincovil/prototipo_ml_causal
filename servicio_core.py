@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import math
+import textwrap
 
 from registro import champion, verificar_alias
 from rutas import ARTEFACTOS, REGISTRO
@@ -48,25 +49,43 @@ def _lectura(efecto: float, ic: list, *, individual: bool = False,
             "declarados.")
 
 
-def _texto_sensibilidad(sens: dict | None) -> str | None:
+def _filas_sensibilidad(sens: dict | None) -> list[tuple[str, str]]:
     if not sens:
-        return None
+        return []
     if sens.get("aplicable") is False:
-        return sens.get("motivo", "no aplicable a este estimando")
+        return [("Sensibilidad", sens.get("motivo", "no aplicable a este estimando"))]
+
+    filas = []
     ev = sens.get("e_value") or {}
     rv = sens.get("valor_robustez_ols") or {}
-    manski = sens.get("cotas_manski") or {}
     partes = []
     if ev:
         partes.append(f"E-value {ev.get('e_value_punto', float('nan')):.2f} "
                       f"(IC {ev.get('e_value_ic', float('nan')):.2f})")
     if rv:
         partes.append(f"RV OLS {rv.get('rv_pct', float('nan')):.1f} %")
+    if partes:
+        filas.append(("Sensibilidad", "; ".join(partes)))
+
+    rb = sens.get("rosenbaum") or {}
+    if rb:
+        gamma = rb.get("gamma")
+        valor_gamma = f"{gamma:.2f}" if gamma is not None else "no alcanzada"
+        filas.append(("Rosenbaum", (
+            f"Γ {valor_gamma} ({rb.get('n_pares')} pares; Wilcoxon, no AIPW).\n"
+            f"{rb.get('lectura', '')}\n{rb.get('limites', '')}").strip()))
+
+    manski = sens.get("cotas_manski") or {}
     if manski:
         cotas = manski.get("ate", [float("nan"), float("nan")])
-        partes.append(f"Manski ATE [{cotas[0]:.2f}, {cotas[1]:.2f}] "
-                      "(sin ignorabilidad; soporte Y observado)")
-    return "; ".join(partes) or sens.get("lectura")
+        filas.append(("Cotas de Manski", (
+            f"ATE [{cotas[0]:.2f}, {cotas[1]:.2f}] "
+            f"(sin ignorabilidad; soporte Y observado).\n"
+            f"{manski.get('lectura', '')}\n{manski.get('limites', '')}").strip()))
+
+    if not filas and sens.get("lectura"):
+        filas.append(("Sensibilidad", sens["lectura"]))
+    return filas
 
 
 def _texto_identificacion(ident: dict | None) -> str | None:
@@ -106,14 +125,34 @@ def _texto_placebo(placebo: dict | None) -> str | None:
         estado = "pasa" if td.get("placebo_ok") else "falla"
         partes.append(f"D permutado: {estado}; "
                       f"p={td.get('p_valor_aprox', float('nan')):.3f}, "
-                      f"percentil {td.get('percentil_observado', float('nan')):.1f}")
+                      f"percentil {td.get('percentil_observado', float('nan')):.1f}. "
+                      f"{td.get('lectura', '')} {td.get('que_no_prueba', '')}")
     if rd:
         estado = "pasa" if rd.get("control_negativo_ok") else "falla"
         ic = rd.get("ic95", [float("nan"), float("nan")])
         partes.append(f"Y permutado: {estado}; "
                       f"efecto {rd.get('efecto', float('nan')):.2f} "
-                      f"[{ic[0]:.2f}, {ic[1]:.2f}]")
+                      f"[{ic[0]:.2f}, {ic[1]:.2f}]. "
+                      f"{rd.get('lectura', '')} {rd.get('que_no_prueba', '')}")
     return "; ".join(partes) or placebo.get("lectura")
+
+
+def _formatear_filas(filas: list[tuple[str, str]], ancho_total: int = 88) -> str:
+    """Alinea etiquetas y envuelve el contenido para terminal y pantallas angostas."""
+    ancho = max(len(etiqueta) for etiqueta, _ in filas)
+    ancho_valor = max(20, ancho_total - ancho - 3)
+    salida = []
+    for etiqueta, valor in filas:
+        primera = True
+        for parrafo in str(valor).splitlines() or [""]:
+            lineas = textwrap.wrap(
+                parrafo, width=ancho_valor,
+                break_long_words=False, break_on_hyphens=False) or [""]
+            for linea in lineas:
+                prefijo = f"{etiqueta.ljust(ancho)} : " if primera else " " * (ancho + 3)
+                salida.append(prefijo + linea)
+                primera = False
+    return "\n".join(salida)
 
 
 def formatear(payload: dict) -> str:
@@ -155,24 +194,57 @@ def formatear(payload: dict) -> str:
         filas.append(("Advertencias", " · ".join(payload.get("advertencias") or [])))
     if payload.get("deprecacion"):
         filas.append(("Deprecación", payload["deprecacion"]))
-    sens = _texto_sensibilidad(payload.get("sensibilidad"))
-    if sens:
-        filas.append(("Sensibilidad", sens))
-    placebo = _texto_placebo(payload.get("placebo"))
-    if placebo:
-        filas.append(("Placebo", placebo))
-    ident = _texto_identificacion(payload.get("identificacion"))
-    if ident:
-        filas.append(("Identificación causal", ident))
+    if not es_heterogeneidad:
+        filas.extend(_filas_sensibilidad(payload.get("sensibilidad")))
+        placebo = _texto_placebo(payload.get("placebo"))
+        if placebo:
+            filas.append(("Placebo", placebo))
+        ident = _texto_identificacion(payload.get("identificacion"))
+        if ident:
+            filas.append(("Identificación causal", ident))
     filas.append(("Lectura", payload.get("interpretacion", "")))
     filas.append(("Alcance", payload.get("que_cubre_el_ic", "")))
-    limites = payload.get("limitaciones") or []
-    if limites:
-        filas.append(("Límites", " · ".join(limites)))
+    if not es_heterogeneidad:
+        limites = payload.get("limitaciones") or []
+        if limites:
+            filas.append(("Límites", " · ".join(limites)))
 
-    ancho = max(len(etiqueta) for etiqueta, _ in filas)
-    cuerpo = "\n".join(f"{etiqueta.ljust(ancho)} : {valor}" for etiqueta, valor in filas)
-    return f"{encabezado}\n" + "-" * len(encabezado) + f"\n\n{cuerpo}\n"
+    cuerpo = _formatear_filas(filas)
+    texto = f"{encabezado}\n" + "-" * len(encabezado) + "\n\n"
+    if es_heterogeneidad:
+        titulo_perfil = "1. PROYECCIÓN DEL PERFIL — NO ES UN EFECTO INDIVIDUAL IDENTIFICADO"
+        texto += titulo_perfil + "\n" + "-" * len(titulo_perfil) + "\n\n"
+    texto += cuerpo + "\n"
+
+    globales = payload.get("diagnosticos_globales")
+    if not es_heterogeneidad or not globales:
+        return texto
+
+    ic_global = globales["ic95"]
+    filas_globales = [
+        ("Estimando", globales.get("estimando", "ATE poblacional")),
+        ("Efecto ATE", f"{_num(globales['efecto'])} {globales.get('unidad', '')}"),
+        ("IC 95 %", f"{_num(ic_global[0])} a {_num(ic_global[1])}"),
+    ]
+    if globales.get("estado_puerta"):
+        filas_globales.append(("Puerta", globales["estado_puerta"]))
+    filas_globales.extend(_filas_sensibilidad(globales.get("sensibilidad")))
+    placebo_global = _texto_placebo(globales.get("placebo"))
+    if placebo_global:
+        filas_globales.append(("Placebos", placebo_global))
+    ident_global = _texto_identificacion(globales.get("identificacion"))
+    if ident_global:
+        filas_globales.append(("Identificación causal", ident_global))
+    filas_globales.append(("Lectura", globales.get("interpretacion", "")))
+    filas_globales.append(("Alcance", globales.get("alcance", "")))
+    limites_globales = globales.get("limitaciones") or []
+    if limites_globales:
+        filas_globales.append(("Límites", " · ".join(limites_globales)))
+
+    cuerpo_global = _formatear_filas(filas_globales)
+    titulo_global = "2. DIAGNÓSTICOS GLOBALES DEL ATE — REFERENCIA, NO DEL PERFIL"
+    return (texto + "\n" + titulo_global + "\n" + "-" * len(titulo_global) +
+            f"\n\n{cuerpo_global}\n")
 
 
 def _cargar() -> dict:
@@ -287,6 +359,7 @@ def _sensibilidad_resumen(sens: dict) -> dict:
     ev = sens.get("e_value") or {}
     rv = sens.get("valor_robustez_ols") or {}
     manski = sens.get("cotas_manski") or {}
+    rosenbaum = sens.get("rosenbaum") or {}
     return {
         "e_value_punto": ev.get("e_value_punto"),
         "e_value_ic": ev.get("e_value_ic"),
@@ -295,6 +368,14 @@ def _sensibilidad_resumen(sens: dict) -> dict:
         "manski_ancho": manski.get("ancho"),
         "manski_incluye_cero": manski.get("incluye_cero"),
         "manski_fuente_soporte": manski.get("fuente_soporte"),
+        "manski_interpretacion": manski.get("lectura"),
+        "manski_limites": manski.get("limites"),
+        "rosenbaum_gamma": rosenbaum.get("gamma"),
+        "rosenbaum_p_gamma_1": rosenbaum.get("p_gamma_1"),
+        "rosenbaum_p_gamma_cota": rosenbaum.get("p_gamma_cota"),
+        "rosenbaum_n_pares": rosenbaum.get("n_pares"),
+        "rosenbaum_interpretacion": rosenbaum.get("lectura"),
+        "rosenbaum_limites": rosenbaum.get("limites"),
     }
 
 
@@ -314,13 +395,21 @@ def _placebo_resumen(estimacion: dict) -> dict:
             "pasa": td.get("placebo_ok"),
             "p_valor_aprox": td.get("p_valor_aprox"),
             "percentil_observado": td.get("percentil_observado"),
+            "interpretacion": td.get("lectura"),
+            "que_no_prueba": td.get("que_no_prueba"),
         },
         "resultado_permutado": {
             "pasa": rd.get("control_negativo_ok"),
             "efecto": rd.get("efecto"),
             "ic95": rd.get("ic95"),
             "umbral_material": rd.get("umbral_material"),
+            "interpretacion": rd.get("lectura"),
+            "que_no_prueba": rd.get("que_no_prueba"),
         },
+        "interpretacion_general": (
+            "Los placebos evalúan calibración e implementación; no demuestran "
+            "ignorabilidad ni ausencia de confusión."
+        ),
     }
 
 
@@ -555,6 +644,21 @@ def heterogeneidad(perfil: dict) -> dict:
     discriminacion = ("muy baja" if r2 < 0.05 else
                       "baja" if r2 < 0.15 else "moderada")
 
+    diagnosticos_globales = {
+        "estimando": b["tarjeta"]["estimando"],
+        "efecto": round(est["ate_aipw"], 1),
+        "unidad": est["unidad"],
+        "ic95": [round(x, 1) for x in est["ic_aipw"]],
+        "interpretacion": _lectura(est["ate_aipw"], est["ic_aipw"]),
+        "alcance": ("Referencia global del ATE poblacional; estos diagnósticos no son "
+                    "específicos del perfil ni validan su proyección."),
+        "estado_puerta": _estado_puerta(b),
+        "sensibilidad": est.get("sensibilidad", {}),
+        "placebo": est.get("placebo", {}),
+        "identificacion": est.get("identificacion", {}),
+        "limitaciones": b["tarjeta"].get("limitaciones", []),
+    }
+
     return _salida_heterogeneidad({
         "estado": "respuesta",
         "estimando": ("heterogeneidad estimada mediante proyección lineal del score "
@@ -583,6 +687,7 @@ def heterogeneidad(perfil: dict) -> dict:
         "placebo": {"aplicable": False,
                     "motivo": ("el placebo aplica al ATE poblacional, no a una "
                                "proyección de heterogeneidad")},
+        "diagnosticos_globales": diagnosticos_globales,
         "identificacion": est.get("identificacion", {}),
         "limitaciones": b["tarjeta"].get("limitaciones", []),
         "version": b["version"],

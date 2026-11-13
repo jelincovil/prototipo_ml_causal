@@ -109,6 +109,8 @@ def construir_tarjeta(estimacion: dict) -> dict:
             "poblacional ni soporte multivariable.",
             "El E-value no cubre mala especificación, falta de positividad, "
             "selección, error de medición ni violaciones de SUTVA.",
+            "Rosenbaum Γ caracteriza el Wilcoxon de pares retenidos, depende del "
+            "emparejamiento y no es una cota de sensibilidad del ATE AIPW.",
         ],
         "soporte": {
             "rango_propension": estimacion.get("rango_e"),

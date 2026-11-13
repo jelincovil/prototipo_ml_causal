@@ -9,7 +9,7 @@ RUN chmod -R a+rX /app
 RUN useradd --create-home --uid 10001 app
 USER app
 EXPOSE 8000
-ENV SIC_ESCENARIO=synthetic/ihdp SIC_VERSION_ESPERADA=v0008
+ENV SIC_ESCENARIO=synthetic/ihdp SIC_VERSION_ESPERADA=v0009
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=6 \
   CMD ["python", "/app/healthcheck.py"]
 CMD ["uvicorn", "servicio:app", "--host", "0.0.0.0", "--port", "8000"]

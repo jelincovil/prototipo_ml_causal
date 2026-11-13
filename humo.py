@@ -210,8 +210,15 @@ def main() -> int:
     ok &= "estado_puerta" in js and js.get("integridad_valida") is True
     ok &= (js.get("identificacion", {}).get("criterio") == "backdoor"
            and js.get("identificacion", {}).get("pasa") is True)
-    ok &= (js.get("sensibilidad", {}).get("cotas_manski_ate") is not None
-           and js.get("placebo", {}).get("pasa") is True)
+    sens_salud = js.get("sensibilidad", {})
+    placebo_salud = js.get("placebo", {})
+    ok &= (sens_salud.get("cotas_manski_ate") is not None
+           and sens_salud.get("rosenbaum_gamma") is not None
+           and bool(sens_salud.get("manski_interpretacion"))
+           and bool(sens_salud.get("rosenbaum_interpretacion"))
+           and placebo_salud.get("pasa") is True
+           and all(bool(placebo_salud.get(nombre, {}).get("interpretacion"))
+                   for nombre in ("tratamiento_permutado", "resultado_permutado")))
     ok &= _diagnosticos_ok(js)
     print(f"/salud: {r.status_code} {js}")
 
@@ -223,7 +230,12 @@ def main() -> int:
            and "e_value" in j.get("sensibilidad", {})
            and bool(j.get("sensibilidad", {}).get("e_value", {}).get("limites"))
            and "cotas_manski" in j.get("sensibilidad", {})
+           and bool(j.get("sensibilidad", {}).get("rosenbaum", {}).get("lectura"))
+           and bool(j.get("sensibilidad", {}).get("cotas_manski", {}).get("lectura"))
+           and "rosenbaum" in j.get("sensibilidad", {})
            and "tratamiento_permutado" in j.get("placebo", {})
+           and all(bool(j.get("placebo", {}).get(nombre, {}).get("lectura"))
+                   for nombre in ("tratamiento_permutado", "resultado_permutado"))
            and j.get("placebo", {}).get("pasa") is True
            and j.get("identificacion", {}).get("identificacion_pasa") is True
            and j.get("integridad_valida") is True)
@@ -254,8 +266,17 @@ def main() -> int:
     r4 = c.post("/heterogeneidad", json=dentro)
     j4 = r4.json()
     ok &= r4.status_code == 200 and _heterogeneidad_ok(j4)
+    globales = j4.get("diagnosticos_globales", {})
     ok &= (j4.get("estado_puerta") is not None
-           and j4.get("sensibilidad", {}).get("aplicable") is False)
+           and j4.get("sensibilidad", {}).get("aplicable") is False
+           and "efecto" in globales and len(globales.get("ic95", [])) == 2
+           and "no son" in globales.get("alcance", "")
+           and globales.get("sensibilidad", {}).get("rosenbaum", {}).get("gamma")
+           is not None
+           and globales.get("sensibilidad", {}).get("cotas_manski", {}).get("ate")
+           is not None
+           and all(bool(globales.get("placebo", {}).get(nombre, {}).get("lectura"))
+                   for nombre in ("tratamiento_permutado", "resultado_permutado")))
     print(f"/heterogeneidad dentro: {r4.status_code} estado={j4.get('estado')} "
           f"proyeccion={j4.get('proyeccion')} ic95={j4.get('ic95')} "
           f"r2={j4.get('ajuste_r2')}")
@@ -287,8 +308,12 @@ def main() -> int:
     r8 = c.get("/efecto?formato=texto")
     ok &= (r8.status_code == 200 and "IC 95" in r8.text
            and "Sensibilidad" in r8.text and "Placebo" in r8.text
-           and "Manski" in r8.text and "criterio backdoor: pasa" in r8.text
+           and "Rosenbaum" in r8.text and "deja de rechazar" in r8.text
+           and "Manski" in r8.text and "no identifica" in r8.text
+           and "criterio backdoor: pasa" in r8.text
            and "D permutado: pasa" in r8.text and "Y permutado: pasa" in r8.text
+           and "No prueba ignorabilidad" in " ".join(r8.text.split())
+           and max(map(len, r8.text.splitlines())) <= 88
            and r8.headers["content-type"].startswith("text/plain"))
     print(f"/efecto?formato=texto: {r8.status_code} "
           f"({len(r8.text.splitlines())} líneas) — lecturas legibles OK")
@@ -305,8 +330,21 @@ def main() -> int:
     r9 = c.post("/heterogeneidad?formato=texto", json=dentro)
     ok &= (r9.status_code == 200
            and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r9.text
-           and "Proyección" in r9.text and "Advertencias" in r9.text)
-    print(f"/heterogeneidad?formato=texto: {r9.status_code} encabezado OK")
+           and "1. PROYECCIÓN DEL PERFIL" in r9.text
+           and "NO ES UN EFECTO INDIVIDUAL IDENTIFICADO" in r9.text
+           and "2. DIAGNÓSTICOS GLOBALES DEL ATE" in r9.text
+           and "REFERENCIA, NO DEL PERFIL" in r9.text
+           and "Proyección" in r9.text and "Advertencias" in r9.text
+           and "Efecto ATE" in r9.text and "Rosenbaum" in r9.text
+           and "Manski" in r9.text and "D permutado: pasa" in r9.text
+           and "Y permutado: pasa" in r9.text
+           and any(linea.startswith("Cotas de Manski")
+                   for linea in r9.text.splitlines())
+           and max(map(len, r9.text.splitlines())) <= 88
+           and r9.text.index("1. PROYECCIÓN DEL PERFIL")
+           < r9.text.index("2. DIAGNÓSTICOS GLOBALES DEL ATE"))
+    print(f"/heterogeneidad?formato=texto: {r9.status_code} "
+          "perfil y referencia global separados OK")
 
     r10 = c.post("/efecto_individual?formato=texto", json=dentro)
     ok &= (r10.status_code == 200
@@ -331,8 +369,10 @@ def main() -> int:
 
     r12 = c.get("/calcular", params=dentro)
     ok &= (r12.status_code == 200
-           and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r12.text)
-    print(f"/calcular: {r12.status_code} informe de heterogeneidad generado")
+           and "HETEROGENEIDAD ESTIMADA PARA UN PERFIL" in r12.text
+           and "1. PROYECCIÓN DEL PERFIL" in r12.text
+           and "2. DIAGNÓSTICOS GLOBALES DEL ATE" in r12.text)
+    print(f"/calcular: {r12.status_code} informe separado generado")
 
     print("\nHUMO:", "OK" if ok else "FALLÓ")
     return 0 if ok else 1

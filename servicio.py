@@ -18,7 +18,7 @@ import servicio_core as nucleo
 app = FastAPI(title="Puente — prototipo causal local (semana 4)")
 
 ESTILO = """
-body{font-family:-apple-system,Segoe UI,sans-serif;max-width:860px;margin:2rem auto;
+body{font-family:-apple-system,Segoe UI,sans-serif;max-width:760px;margin:2rem auto;
      padding:0 1rem;color:#1f2933;background:#fbfbfd}
 h1{font-size:1.3rem;margin-bottom:.2rem}
 p.sub{color:#52606d;margin-top:0}
@@ -31,8 +31,9 @@ input{font:inherit;padding:.35rem .45rem;border:1px solid #bcccdc;border-radius:
 button{margin-top:1rem;font:inherit;padding:.55rem 1.1rem;border:0;border-radius:8px;
        background:#0e7490;color:#fff;cursor:pointer}
 button:hover{background:#155e75}
-pre{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:8px;overflow-x:auto;
-    font-size:.85rem;line-height:1.45}
+pre{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:8px;
+    white-space:pre-wrap;overflow-wrap:break-word;overflow-x:hidden;
+    font-size:.85rem;line-height:1.55}
 a{color:#0e7490}
 .bad{background:#fde8e8;border-left:4px solid #c81e1e;padding:.7rem 1rem;border-radius:6px}
 """

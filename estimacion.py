@@ -13,7 +13,7 @@ from scipy.optimize import minimize
 
 from datos import EsquemaCausal, leer
 from rutas import ARTEFACTOS, DATOS, ESCENARIO
-from sensibilidad import (control_negativo, cotas_manski,
+from sensibilidad import (control_negativo, cotas_manski, cota_gamma_rosenbaum,
                           placebo_permutacion, resumen_sensibilidad)
 
 SEMILLA = 4242
@@ -486,6 +486,7 @@ def estimar() -> dict:
 
     sd_y = float(Y.std(ddof=1))
     sens = resumen_sensibilidad(aipw["ate"], aipw["ic"], sd_y, ajustado)
+    sens["rosenbaum"] = cota_gamma_rosenbaum(Y, D, e)
     sens["cotas_manski"] = cotas_manski(Y, D)
     placebo_d = placebo_permutacion(col, esquema, aipw_crossfit, n_rep=200,
                                     semilla=SEMILLA)
@@ -584,6 +585,9 @@ if __name__ == "__main__":
     rv = r["sensibilidad"]["valor_robustez_ols"]
     print(f"sensibilidad: E-value = {ev['e_value_punto']:.2f} "
           f"(IC {ev['e_value_ic']:.2f}) | RV OLS = {rv['rv_pct']:.1f} %")
+    rb = r["sensibilidad"]["rosenbaum"]
+    print(f"Rosenbaum Γ (pares, no AIPW) = {rb['gamma']:.2f} | "
+          f"p(Γ=1) = {rb['p_gamma_1']:.3g} | pares = {rb['n_pares']}")
     manski = r["sensibilidad"]["cotas_manski"]
     print(f"Manski ATE (sin ignorabilidad) = [{manski['ate'][0]:.2f}, "
           f"{manski['ate'][1]:.2f}] | soporte Y observado = "

@@ -6,7 +6,7 @@
 2. Haz doble clic y pulsa **Instalar / verificar**.
 3. Pulsa **Iniciar servicio** y después **Abrir ATE**.
 
-El navegador mostrará **http://127.0.0.1:8000/efecto**. El lanzador instala en `%LOCALAPPDATA%\PuenteCausal`, muestra sus errores y registros, y no exige abrir una terminal, permisos de administrador, .NET SDK ni herramientas de compilación. Usa de forma oculta el PowerShell incluido en Windows solo para descomprimir archivos. Lee [uso, desinstalación y diagnóstico](instalador_windows/LEEME.md). El binario no está firmado comercialmente, por lo que Windows SmartScreen puede advertir.
+El navegador mostrará **http://127.0.0.1:8000/efecto**. El lanzador instala en `%LOCALAPPDATA%\PuenteCausal`, muestra sus errores y registros, y no exige abrir una terminal, permisos de administrador, .NET SDK ni herramientas de compilación. Usa de forma oculta el PowerShell incluido en Windows solo para descomprimir archivos. Lee [uso, desinstalación y diagnóstico](instalador_windows/LEEME.md). El binario no está firmado comercialmente, por lo que Windows SmartScreen puede advertir. Este lanzador está fijado al release `v1.0.3` y conserva su champion `v0008`; para usar el champion `v0009` de `main`, emplea los scripts o Docker.
 
 ## Puesta en marcha en 1 comando
 
@@ -33,7 +33,7 @@ Docker (opcional):
 docker compose up
 ```
 
-Los scripts usan `uv`: instalan `uv` y Python 3.13 si faltan, **recrean `.venv`** e instalan `requirements.txt`. Son idempotentes, pero descartan paquetes adicionales o personalizaciones del entorno anterior. El lanzador gráfico, en cambio, reutiliza un entorno válido y solo lo recrea al elegir **Reparar entorno**. Ambas vías usan `synthetic/ihdp` y el champion conservado **`v0008`**, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`. Con los scripts, deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo. Con el lanzador, cierra la ventana o pulsa **Detener**.
+Los scripts usan `uv`: instalan `uv` y Python 3.13 si faltan, **recrean `.venv`** e instalan `requirements.txt`. Son idempotentes, pero descartan paquetes adicionales o personalizaciones del entorno anterior. El lanzador gráfico, en cambio, reutiliza un entorno válido y solo lo recrea al elegir **Reparar entorno**. Todas las vías usan `synthetic/ihdp`, sin ejecutar `make demo` ni `make evidencia` y sin modificar `artifacts/`; los scripts y Docker sirven el champion **`v0009`**, mientras el lanzador conserva el de su release. Con los scripts, deja la terminal abierta y visita **http://127.0.0.1:8000/efecto**; también están disponibles **/salud** y **/docs**. Pulsa Ctrl-C para detenerlo. Con el lanzador, cierra la ventana o pulsa **Detener**.
 
 Repositorio público del prototipo: **[github.com/jelincovil/prototipo_ml_causal](https://github.com/jelincovil/prototipo_ml_causal)**.
 
@@ -140,8 +140,9 @@ make pruebas      # conviene ejecutarlo después de regenerar
 
 El orden registro → monitor **no es transaccional**: `registro.py` puede promover antes de que corra el monitor y no hay rollback automático si una etapa posterior falla. `promover()` bloquea únicamente una versión cuyo `manifest.puerta` ya sea `falla`; `alerta` requiere aceptación explícita. Tras regenerar, comprueba alias, `monitor_estado.json` y `/salud`.
 
-El champion conservado es **`v0008`**; las versiones históricas **`v0001`–`v0007`**
-permanecen intactas. Editar documentación o hashes de `evidencia/` no promueve
+El champion conservado es **`v0009`**; las versiones históricas **`v0001`–`v0008`**
+permanecen intactas. La versión actual sirve Rosenbaum Γ, cotas de Manski y ambos
+placebos con sus interpretaciones y límites en `/efecto` y `/salud`. Editar documentación o hashes de `evidencia/` no promueve
 una versión nueva.
 
 Otros objetivos útiles:
@@ -186,7 +187,9 @@ Pulsar **Ctrl-C** para detenerlo. El bundle válido se carga en la **primera con
   límites de interpretación declarados arriba.
 - `POST /consulta` — media de un estrato declarado con IC; no es un CATE.
 - `POST /heterogeneidad` — devuelve `proyeccion`, un IC **condicional al ajuste**
-  y advertencias; nunca un CATE o efecto individual identificado.
+  y advertencias; nunca un CATE o efecto individual identificado. El bloque separado
+  `diagnosticos_globales` reúne el ATE, su IC, Rosenbaum, Manski y los placebos como
+  referencia poblacional: no son medidas del perfil ni validan su proyección.
 - `POST /efecto_individual` — alias deprecado de `/heterogeneidad`, conservado por
   compatibilidad y con la misma advertencia causal.
 - `GET /salud` — estado del servicio, versión, puerta, integridad del manifiesto y
@@ -207,8 +210,9 @@ Las entradas deben ser objetos JSON con números finitos. La validación actual 
 3. `datos.py` → `estimacion.py` → `registro.py` → `monitor.py` →
    `servicio_core.py` → `servicio.py` — recorrido del dato a la API.
 4. [`evidencia/README.md`](evidencia/README.md) — trazabilidad de comandos, salidas y hashes.
-5. [`docs/GUIA_CONSTRUCCION.md`](docs/GUIA_CONSTRUCCION.md) y
-   [`docs/LEEME_AGENTE.md`](docs/LEEME_AGENTE.md) — construcción y operación.
+5. [`docs/GUIA_CONSTRUCCION.md`](docs/GUIA_CONSTRUCCION.md) y su versión
+   [`docs/GUIA_CONSTRUCCION.pdf`](docs/GUIA_CONSTRUCCION.pdf) — guía de construcción.
+6. [`docs/LEEME_AGENTE.md`](docs/LEEME_AGENTE.md) — operación e invariantes.
 
 ## Estructura breve
 
@@ -224,7 +228,7 @@ servicio.py              endpoints FastAPI y formulario
 pruebas_estimacion.py    pruebas de fórmulas e invariantes
 humo.py                  prueba de humo del servicio
 cobertura.py             simulación opcional en el DGP ilustrativo propio
-artifacts/               artefactos JSON, champion v0008 y versiones históricas
+artifacts/               artefactos JSON, champion v0009 y versiones históricas
 evidencia/               salidas y hashes del cierre
 data_benchmark_causal/   escenarios sintéticos y documentación
 docs/                    guía, bitácora, preguntas causales y material docente
@@ -244,10 +248,10 @@ cachés `__pycache__/` son locales y regenerables; no forman parte del entregabl
 
 | Plataforma | Verificación realizada | Resultado / alcance |
 |---|---|---|
-| **macOS arm64** | Copia limpia en una ruta con espacios; `setup.sh` ejecutado dos veces; datos, pruebas y humo; `arrancar.sh` y consultas HTTP reales | Python 3.13.14, 140 paquetes y `uv pip check` correctos. `PRUEBAS: OK`, `HUMO: OK`; ATE e IC, estrato y abstención fuera de soporte correctos con `v0008`. |
+| **macOS arm64** | Copia limpia en una ruta con espacios; `setup.sh` ejecutado dos veces; datos, pruebas y humo; `arrancar.sh` y consultas HTTP reales | Python 3.13.14, 140 paquetes y `uv pip check` correctos. `PRUEBAS: OK`, `HUMO: OK`; ATE e IC, estrato y abstención fuera de soporte correctos con `v0009`. |
 | **Linux arm64 mediante Docker Engine (Colima)** | `docker build`, `docker run`, healthcheck y endpoints HTTP | Imagen construida y contenedor `healthy`; ATE, consulta y abstención correctos. No implica prueba en Windows ni en todas las arquitecturas Linux. |
 | **Docker Compose** | Revisión estática de `docker-compose.yml` | No ejecutado: el plugin Compose no estaba instalado. El healthcheck exige `estado=ok`, integridad válida, puerta `pasa` y versión esperada. |
-| **Windows / lanzador gráfico** | Compilación MSVC y `ctest --self-test` en `windows-2022`, [ejecución 43322853322](https://github.com/jelincovil/prototipo_ml_causal/actions/runs/43322853322) | Superadas. La publicación del release exige además una instalación nativa `--smoke-test`, arranque real, champion `v0008`, integridad válida, puerta `pasa` y `/efecto` con efecto e IC; los assets no se adjuntan si esta prueba falla. La interacción gráfica en el PC del usuario aún debe comprobarse. |
+| **Windows / lanzador gráfico** | Compilación MSVC y `ctest --self-test` en `windows-2022`, [ejecución 43322853322](https://github.com/jelincovil/prototipo_ml_causal/actions/runs/43322853322) | Superadas con `v0008`. La publicación del release exige además una instalación nativa `--smoke-test`, arranque real, integridad válida, puerta `pasa` y `/efecto` con efecto e IC; los assets no se adjuntan si esta prueba falla. La interacción gráfica en el PC del usuario y la repetición integral con `v0009` aún deben comprobarse. |
 | **Windows / PowerShell** | Revisión estática de `setup.ps1`, `arrancar.ps1` y comandos del manual | Los scripts no han sido ejecutados en Windows nativo. Están escritos para Windows PowerShell 5.1; el lanzador gráfico es la vía recomendada y no depende de ellos. |
 
 La segunda auditoría no ejecutó `make demo` ni `make evidencia`, y no modificó el champion ni los artefactos conservados. Persisten la falta de pruebas del flujo PowerShell y de la GUI en el equipo del usuario, además de dos límites de reproducibilidad: no hay lockfile transitivo ni digest fijado para la imagen base de Docker. Estas pruebas verifican instalación y contratos del prototipo; no certifican identificación causal ni preparación para exposición pública.

@@ -9,7 +9,7 @@ import urllib.request
 
 def main() -> int:
     url = os.environ.get("SIC_SALUD_URL", "http://127.0.0.1:8000/salud")
-    version_esperada = os.environ.get("SIC_VERSION_ESPERADA", "v0008")
+    version_esperada = os.environ.get("SIC_VERSION_ESPERADA", "v0009")
     try:
         with urllib.request.urlopen(url, timeout=2) as respuesta:
             if respuesta.status != 200:

@@ -1,16 +1,18 @@
-"""sensibilidad.py — E-value, valor de robustez, Manski y placebos.
+"""sensibilidad.py — E-value, robustez, Rosenbaum, Manski y placebos.
 
 Módulo de la aplicación (no es un script auxiliar). No lee CSV ni
 `interventions.json`: recibe las columnas ya cargadas por `estimacion.py` y
 devuelve diccionarios listos para viajar en el bundle.
 
-Las dos medidas de sensibilidad son complementarias y tienen límites distintos:
+Las medidas de sensibilidad son complementarias y tienen límites distintos:
 
 - E-value: aproximación para un resultado continuo estandarizado. La razón de
   riesgos se aproxima con ``RR ~ exp(0.91 * d)`` (Chinn 2000; VanderWeele &
   Ding 2017). No es una RR literal ni una cota exacta.
 - Valor de robustez: exacto bajo el modelo lineal de sesgo por omisión para el
   comparador OLS (Cinelli & Hazlett 2020). No es una propiedad exacta del AIPW.
+- Rosenbaum: acota el p-valor de la prueba de rangos con signo de Wilcoxon bajo
+  odds de asignación oculta dentro de pares emparejados. No acota el ATE AIPW.
 - Cotas de Manski: acotan el ATE sin suponer ignorabilidad, usando consistencia y
   un soporte acotado del resultado. No identifican un efecto puntual.
 
@@ -18,12 +20,14 @@ El placebo de tratamiento permutado y el placebo de resultado permutado son
 controles negativos: evalúan calibración del estimador, no prueban
 ignorabilidad.
 """
+
 from __future__ import annotations
 
 import math
 from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
+from scipy.stats import norm, rankdata
 
 if TYPE_CHECKING:
     from datos import EsquemaCausal
@@ -205,6 +209,173 @@ def cotas_manski(y: np.ndarray, d: np.ndarray,
             if soporte_observado else
             "Las cotas no identifican el ATE puntual; dependen de que el soporte "
             "poblacional declarado sea correcto."
+        ),
+    }
+
+
+def p_superior_rosenbaum(diferencias: np.ndarray, gamma: float = 1.0) -> dict:
+    """Cota pesimista de p para rangos con signo en diseño de pares.
+
+    Prueba unilateral ``H0: sin efecto`` contra diferencias tratado-control
+    positivas. Los ceros se eliminan y los empates reciben rango promedio.
+    Bajo el modelo de Rosenbaum, ``p = Gamma/(1+Gamma)`` maximiza la media
+    nula y produce la cota superior del p-valor con aproximación normal sin
+    corrección de continuidad (Rosenbaum 1987; 2002, sección 4.3.3).
+    """
+    if not np.isfinite(gamma) or gamma < 1.0:
+        raise ValueError("gamma debe ser finito y mayor o igual que 1")
+    d = np.asarray(diferencias, dtype=float).reshape(-1)
+    if not np.all(np.isfinite(d)):
+        raise ValueError("las diferencias emparejadas deben ser finitas")
+    d = d[np.abs(d) > np.finfo(float).eps * max(1.0, float(np.max(np.abs(d),
+                                                                   initial=0.0)))]
+    n = int(d.size)
+    if n < 2:
+        raise ValueError("se necesitan al menos dos diferencias emparejadas no nulas")
+    q = rankdata(np.abs(d), method="average")
+    observado = float(q[d > 0.0].sum())
+    p = float(gamma / (1.0 + gamma))
+    media = float(p * q.sum())
+    varianza = float(p * (1.0 - p) * np.sum(q ** 2))
+    sd = math.sqrt(varianza)
+    z = (observado - media) / sd
+    return {
+        "gamma": float(gamma),
+        "p_superior": float(norm.sf(z)),
+        "estadistico": observado,
+        "media_peimista": media,
+        "desviacion_pesimista": sd,
+        "z": float(z),
+        "n_diferencias_no_nulas": n,
+    }
+
+
+def cota_gamma_rosenbaum(y: np.ndarray, d: np.ndarray,
+                          propensiones_oof: np.ndarray,
+                          caliper_sd: float = 0.2, alpha: float = 0.05,
+                          gamma_max: float = 100.0) -> dict:
+    """Γ crítica de Rosenbaum, tras emparejamiento por propensión sin reemplazo.
+
+    Cada tratado se asigna en orden determinista al control disponible con
+    menor distancia absoluta en el logit de la propensión, sujeto a
+    ``caliper_sd * sd(logits)``. Los tratados empatados se resuelven por su
+    índice original. Γ es la primera cota superior de p > ``alpha``.
+    Este análisis se refiere al contraste emparejado retenido, no al AIPW.
+    """
+    y = np.asarray(y, dtype=float).reshape(-1)
+    d = np.asarray(d, dtype=float).reshape(-1)
+    e = np.asarray(propensiones_oof, dtype=float).reshape(-1)
+    if y.size == 0 or y.size != d.size or y.size != e.size:
+        raise ValueError("y, d y propensiones_oof deben tener igual tamaño positivo")
+    if not all(np.all(np.isfinite(x)) for x in (y, d, e)):
+        raise ValueError("y, d y propensiones_oof deben ser finitos")
+    if not np.all(np.isin(d, [0.0, 1.0])):
+        raise ValueError("d debe ser binario (0/1)")
+    if np.any((e <= 0.0) | (e >= 1.0)):
+        raise ValueError("las propensiones OOF deben estar estrictamente entre 0 y 1")
+    if not 0.0 < caliper_sd < float("inf"):
+        raise ValueError("caliper_sd debe ser positivo y finito")
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha debe estar estrictamente entre 0 y 1")
+    if not np.isfinite(gamma_max) or gamma_max < 1.0:
+        raise ValueError("gamma_max debe ser finito y mayor o igual que 1")
+
+    tratados = np.flatnonzero(d == 1.0)
+    controles = np.flatnonzero(d == 0.0)
+    if tratados.size < 2 or controles.size < 1:
+        raise ValueError("se necesitan al menos dos tratados y un control")
+    logits = np.log(e / (1.0 - e))
+    sd_logit = float(logits.std(ddof=1))
+    caliper = float(caliper_sd * sd_logit)
+    libres: set[int] = set(map(int, controles))
+    diferencias = []
+    pares = []
+    for i in tratados:
+        if not libres:
+            break
+        candidato = min(libres, key=lambda j: (abs(logits[i] - logits[j]), j))
+        distancia = float(abs(logits[i] - logits[candidato]))
+        if distancia <= caliper:
+            libres.remove(candidato)
+            diferencias.append(float(y[i] - y[candidato]))
+            pares.append({"tratado": int(i), "control": int(candidato),
+                          "distancia_logit": distancia})
+    if len(diferencias) < 2:
+        raise ValueError("el caliper no retiene suficientes pares para Wilcoxon")
+
+    dif = np.asarray(diferencias, dtype=float)
+    if np.count_nonzero(np.abs(dif) > np.finfo(float).eps * max(
+            1.0, float(np.max(np.abs(dif), initial=0.0)))) < 2:
+        raise ValueError("los pares retenidos no contienen dos diferencias no nulas")
+    p1 = p_superior_rosenbaum(dif, 1.0)["p_superior"]
+    if p1 > alpha:
+        gamma = 1.0
+        pcota = p1
+    else:
+        # Busca el primer entero que cruza alpha y luego interpola el cruce.
+        gamma_entero = next((g for g in range(2, int(math.floor(gamma_max)) + 1)
+                             if p_superior_rosenbaum(dif, g)["p_superior"] > alpha),
+                            None)
+        if gamma_entero is None:
+            gamma = None
+            pcota = p_superior_rosenbaum(dif, gamma_max)["p_superior"]
+        elif gamma_entero == 2:
+            gamma = 2.0
+            pcota = p_superior_rosenbaum(dif, gamma)["p_superior"]
+        else:
+            lo, hi = float(gamma_entero - 1), float(gamma_entero)
+            for _ in range(60):
+                medio = (lo + hi) / 2.0
+                if p_superior_rosenbaum(dif, medio)["p_superior"] <= alpha:
+                    lo = medio
+                else:
+                    hi = medio
+            gamma = hi
+            pcota = p_superior_rosenbaum(dif, gamma)["p_superior"]
+    lectura = (
+        f"El contraste emparejado deja de rechazar la nula al 5 % en Γ ≈ {gamma:.2f}: "
+        "odds de asignación desiguales de esa magnitud ya podrían explicar el "
+        "resultado de Wilcoxon." if gamma is not None else
+        f"Ninguna Γ ≤ {gamma_max:g} hace que la cota superior de p supere {alpha:g}."
+    )
+    return {
+        "metodo": "Rosenbaum Γ: Wilcoxon signed-rank en pares 1:1, aproximación normal",
+        "aplicable": True,
+        "objeto": "contraste de pares emparejados retenidos; no es una cota del ATE AIPW",
+        "gamma": gamma,
+        "p_gamma_1": p1,
+        "p_gamma_cota": pcota,
+        "alpha": float(alpha),
+        "gamma_max_busqueda": float(gamma_max),
+        "n_pares": len(diferencias),
+        "n_diferencias_cero": int(np.sum(np.isclose(dif, 0.0))),
+        "n_tratados_original": int(tratados.size),
+        "n_controles_original": int(controles.size),
+        "n_pares_descartados": int(tratados.size - len(diferencias)),
+        "diseno_emparejamiento": {
+            "metodo": "greedy por orden de tratado, vecino más próximo, sin reemplazo",
+            "distancia": "distancia absoluta en logit de propensiones OOF sin trimming",
+            "caliper_sd": float(caliper_sd),
+            "sd_logit": sd_logit,
+            "caliper": caliper,
+            "criterio_ties": "índice original creciente del control",
+            "pares_indices": pares,
+        },
+        "estadistico": "suma de rangos promedio de diferencias positivas; ceros excluidos",
+        "direccion": "unilateral: efecto positivo, sin corrección de continuidad",
+        "supuestos": (
+            "Consistencia/SUTVA, independencia entre pares y asignación dentro de cada "
+            "par; las odds ocultas dentro de un par están acotadas entre 1/Γ y Γ."
+        ),
+        "lectura": lectura,
+        "referencia": (
+            "Rosenbaum (1987), Biometrika 74(1), 13–26; Rosenbaum (2002), "
+            "Observational Studies, 2.ª ed., sección 4.3.3."
+        ),
+        "limites": (
+            "No es una cota de sensibilidad del ATE AIPW ni cubre mala especificación "
+            "o falta de soporte. El resultado depende del emparejamiento, caliper y "
+            "aproximación normal; Γ=1 supone asignación aleatoria dentro de los pares."
         ),
     }
 

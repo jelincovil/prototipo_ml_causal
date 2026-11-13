@@ -31,7 +31,7 @@ IHDP y a un DGP ilustrativo propio: no revalida jobs, Docker ni los documentos.
 ```text
 datos.py               esquema de roles, hashes de splits, "la pared"
 estimacion.py          OLS, propensity, ESS, SMD, AIPW cross-fitting, estratos
-sensibilidad.py        E-value, valor de robustez, cotas de Manski y placebos
+sensibilidad.py        E-value, robustez OLS, Rosenbaum, cotas de Manski y placebos
 registro.py            tarjeta, versión inmutable, manifiesto, promoción de champion
 monitor.py             PSI, ventanas y puerta con acciones declaradas
 servicio_core.py       bundle cacheado, /consulta y /heterogeneidad
@@ -93,8 +93,9 @@ SIC_ESCENARIO=synthetic/ihdp make PYTHON=.venv_ci/bin/python demo
 SIC_ESCENARIO=synthetic/ihdp make PYTHON=.venv_ci/bin/python evidencia
 ```
 
-El flujo de evidencia ya generó y promovió **`v0008`**, que es el champion actual;
-`v0001`–`v0007` permanecen intactas (`evidencia/06_registro.txt`). No uses
+El flujo de evidencia generó y promovió históricamente **`v0008`**.
+El champion actual, **`v0009`**, incorpora Rosenbaum y las interpretaciones separadas
+del ATE y de la proyección de perfil; `v0001`–`v0008` permanecen intactas. No uses
 `make demo` o `make evidencia` como simples comprobaciones de solo lectura ni
 promuevas versiones nuevas solo por cambios documentales.
 
@@ -118,8 +119,9 @@ OOF es 0,11 frente a 0,43 sin ponderar. Consulta `evidencia/02_estimacion.txt`.
    El servicio verifica alias y hashes al cargar; si no coinciden, se abstiene.
 6. Los umbrales y el corte de heterogeneidad se declaran **antes** de ver resultados.
 7. `POST /heterogeneidad` devuelve `proyeccion`, IC condicional y advertencias;
-   nunca un CATE o efecto individual identificado. `POST /efecto_individual` es
-   un alias deprecado con el mismo núcleo de respuesta.
+   nunca un CATE o efecto individual identificado. `diagnosticos_globales` separa
+   el ATE, Rosenbaum, Manski y los placebos: son referencia poblacional, no medidas
+   del perfil. `POST /efecto_individual` es un alias deprecado de la misma proyección.
 
 ---
 
@@ -151,6 +153,6 @@ OOF es 0,11 frente a 0,43 sin ponderar. Consulta `evidencia/02_estimacion.txt`.
 
 `BITACORA.md` §11–§16 documenta los fallos históricos, su corrección y la
 actualización de alcance; §17 registra la validación local real de `v0008`.
-`GUIA_CONSTRUCCION.md` §12 lista errores frecuentes con su causa. No cambies el
-champion ni ejecutes los flujos de regeneración solo para resolver una discrepancia
-documental.
+`GUIA_CONSTRUCCION.md`, sección «Errores frecuentes», relaciona fallos con su
+causa y corrección. No cambies el champion ni ejecutes los flujos de regeneración
+solo para resolver una discrepancia documental.

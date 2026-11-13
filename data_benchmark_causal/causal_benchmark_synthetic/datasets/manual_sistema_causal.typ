@@ -32,7 +32,7 @@
   #v(0.55em)
   #text(size: 9.5pt, fill: luma(80))[
     Prototipo «Puente» · repositorio `prototipo_ml_causal` · escenario conservado
-    `synthetic/ihdp` · champion `v0008`
+    `synthetic/ihdp` · champion `v0009`
   ]
 ]
 
@@ -150,7 +150,7 @@ reiniciarse; una carga fallida no se cachea.
   fill: rgb("#f7fafc"), stroke: 0.5pt + luma(190))[
   *Ruta crítica para evaluarlo.* Clona el repositorio, ejecuta el instalador de tu
   plataforma —sección 2— y abre `/salud` y `/efecto` en `http://127.0.0.1:8000`.
-  Comprueba `version = v0008`, `integridad_valida = true`, `estado_puerta = pasa` y
+  Comprueba `version = v0009`, `integridad_valida = true`, `estado_puerta = pasa` y
   ATE 5,2 [3,9; 6,4]. Si solo necesitas evaluar el servicio conservado, puedes detenerte
   ahí: no hace falta regenerar nada. Para integrarlo, continúa en las secciones 8–10;
   para entender los datos y el método, en las 4–7.
@@ -205,14 +205,14 @@ prototipo_ml_causal/
 ├── healthcheck.py                salud, integridad, puerta y versión para Docker
 ├── datos.py                      esquema, hashes de splits y pared de verdad
 ├── estimacion.py                 AIPW, OLS, diagnósticos e identificación
-├── sensibilidad.py               E-value, robustez, Manski y placebos
+├── sensibilidad.py               E-value, robustez, Rosenbaum, Manski y placebos
 ├── registro.py                   tarjeta, manifiesto y promoción con comprobaciones
 ├── monitor.py                    ventanas, deriva y puerta
 ├── servicio_core.py              bundle, integridad y contratos de respuesta
 ├── servicio.py                   endpoints FastAPI y formulario web
 ├── pruebas_estimacion.py         fórmulas e invariantes
 ├── humo.py                       contratos de servicio y abstenciones
-├── artifacts/                    champion v0008 y versiones históricas
+├── artifacts/                    champion v0009 y versiones históricas
 ├── evidencia/                    comandos, salidas y hashes del cierre
 ├── data_benchmark_causal/         escenarios, metadatos y este manual
 └── docs/                          pregunta, guías, bitácora e histórico
@@ -268,7 +268,7 @@ El lanzador instala el código de la versión publicada, `uv` 0.13.8 y Python 3.
 `%LOCALAPPDATA%\PuenteCausal`, no en `Documents`. Reutiliza un entorno válido al repetir la
 instalación. *Reparar entorno* pide confirmación, conserva el anterior en `respaldo/` y crea
 uno nuevo. Ejecuta Uvicorn directamente con `synthetic/ihdp`; no activa una consola y no
-regenera estimaciones, artefactos ni el champion `v0008`.
+regenera estimaciones, artefactos ni el champion `v0008` fijado en ese release.
 
 Los botones *Detener*, *Abrir /docs* y *Abrir registros* permiten operar y diagnosticar sin
 comandos. Cerrar el lanzador detiene el servicio que haya iniciado. Para desinstalar, detén
@@ -292,6 +292,14 @@ if ($LASTEXITCODE -eq 0) {
 ```
 
 La condición evita arrancar si falla `setup` y funciona también en Windows PowerShell 5.1.
+
+Por separado:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File setup.ps1
+powershell -ExecutionPolicy Bypass -File arrancar.ps1
+```
+
 Esta alternativa sí *recrea `.venv`*. Ha recibido revisión estática, no una validación
 completa del flujo en Windows nativo. Si `uv` queda fuera de `PATH`, cierra y abre PowerShell
 y repite el comando. Para los ejemplos HTTP usa `curl.exe`, no el alias histórico `curl`.
@@ -331,7 +339,7 @@ Abre estas direcciones en el navegador:
     [Esquema OpenAPI generado por FastAPI],
 )
 
-Con los artefactos conservados debes ver `version = v0008`, `estado_puerta = pasa`,
+Con los artefactos conservados debes ver `version = v0009`, `estado_puerta = pasa`,
 `integridad_valida = true` y, en `/efecto`, `efecto = 5.2` con `ic95 = [3.9, 6.4]`.
 Las respuestas pueden contener más campos que los fragmentos mostrados en este manual.
 
@@ -401,9 +409,9 @@ funciones del servicio y comprueban sus contratos; no necesitan otro Uvicorn en 
   [`docker compose` no existe], [El Engine no basta: instala o habilita el plugin Compose,
     o utiliza los scripts con `uv`.],
   [Error de hash o integridad], [No estimes por encima. Restaura el bundle desde una copia
-    limpia y revisa alias, `manifest.json` y archivos de `v0008`; el servicio debe abstenerse.],
+    limpia y revisa alias, `manifest.json` y archivos de `v0009`; el servicio debe abstenerse.],
   [La respuesta no coincide], [Lee `/salud`: versión, integridad y puerta. Los ejemplos de
-    este manual corresponden específicamente al champion conservado `v0008`.],
+    este manual corresponden específicamente al champion conservado `v0009`.],
 )
 
 = Datos, variables y pregunta causal
@@ -633,7 +641,7 @@ predicción auxiliar; no arregla modelos lineales incorrectos ni confusión no o
 #table(
   columns: (2.8fr, 2.2fr),
   inset: 5pt,
-  table.header([*Cantidad*], [*`synthetic/ihdp` · `v0008`*]),
+  table.header([*Cantidad*], [*`synthetic/ihdp` · `v0009`*]),
   [Diferencia cruda], [10,3 puntos; IC aprox. [7,60; 13,05]],
   [OLS ajustado (comparador)], [4,8 puntos; IC [3,8; 5,8]],
   [*ATE AIPW*], [*5,2 puntos; IC [3,9; 6,4]*],
@@ -674,7 +682,7 @@ calibración exacta ni validez en datos reales.
 #table(
   columns: (1.4fr, 1.5fr, 3.2fr),
   inset: 5pt,
-  table.header([*Medida*], [*Champion*], [*Qué responde y qué no*]),
+  table.header([*Medida*], [*Cifra de referencia*], [*Qué responde y qué no*]),
   [E-value aproximado], [2,07; IC 1,85],
     [Fuerza de asociación aproximada con `D` y `Y`, condicionada en `X`, necesaria para
     explicar el punto o el límite del IC. Para resultado continuo usa efecto estandarizado:
@@ -682,6 +690,10 @@ calibración exacta ni validez en datos reales.
   [Valor de robustez OLS], [37,4 %],
     [Fracción del R² parcial residual de `D` y `Y` que un confusor debería explicar para
     llevar OLS a cero. Es exacto para ese OLS, no para el AIPW.],
+  [Rosenbaum Γ], [2,21; 179 pares (`v0009`)],
+    [Wilcoxon de pares 1:1, emparejados por propensión OOF con caliper 0,2·DE(logit).
+    Acota el p-valor del contraste emparejado bajo odds ocultas de asignación; no acota
+    el ATE AIPW. Depende del emparejamiento y usa aproximación normal.],
   [Cotas de Manski], [[−37,66; 48,48]],
     [Sin ignorabilidad no hay identificación puntual; las cotas incluyen cero. Ilustración
     con `Y` observado en [10,41; 96,54]; extremos muestrales no garantizan soporte real.],
@@ -718,11 +730,11 @@ pero el campo `perfil: dict` no enumera las covariables: el contrato siguiente s
   table.header([*Método y ruta*], [*Entrada*], [*Salida*]),
   [`GET /efecto`], [ninguna], [ATE poblacional, IC, identificación, sensibilidad y placebos],
   [`POST /consulta`], [`bw` obligatorio; demás opcionales], [Media de uno de dos estratos],
-  [`POST /heterogeneidad`], [las 25 covariables], [`proyeccion`, IC condicional y advertencias],
+  [`POST /heterogeneidad`], [las 25 covariables], [`proyeccion`, IC condicional y `diagnosticos_globales` separado],
   [`POST /efecto_individual`], [igual que heterogeneidad], [Alias deprecado; no otro estimador],
   [`GET /salud`], [ninguna], [Versión, puerta, integridad y resúmenes],
   [`GET /`], [ninguna], [Formulario HTML],
-  [`GET /calcular`], [covariables query], [Informe HTML de heterogeneidad],
+  [`GET /calcular`], [covariables query], [Informe separado: perfil y diagnósticos globales],
 )
 
 == ATE poblacional: `GET /efecto`
@@ -742,15 +754,17 @@ Fragmento simplificado de la respuesta conservada (la real incluye más diagnós
   "unidad": "puntos de test cognitivo",
   "ic95": [3.9, 6.4],
   "estado_puerta": "pasa",
-  "version": "v0008"
+  "version": "v0009"
 }
 ```
 
 Lectura: en la población sintética de entrenamiento, el programa se asocia a un efecto
 causal promedio estimado de 5,2 puntos bajo los supuestos declarados. El intervalo no
-cubre efectos individuales. `identificacion` comunica backdoor/DoWhy, `sensibilidad`
-incluye E-value, robustez y Manski, y `placebo`, ambos tests. Son campos para revisar,
-no adornos para sustituir el estimando.
+cubre efectos individuales. `identificacion` comunica backdoor/DoWhy. En `v0009`,
+`sensibilidad` incluye E-value, robustez OLS, `cotas_manski` y `rosenbaum`: estas dos
+últimas medidas traen `lectura` y `limites`; ambos placebos traen `lectura` y
+`que_no_prueba`. El formato texto incluye las mismas interpretaciones. Son campos para
+revisar, no adornos para sustituir el estimando.
 
 == Media de estrato: `POST /consulta`
 
@@ -781,7 +795,7 @@ recuerda que la barra `\` de los ejemplos Unix *no* es continuación de línea e
   "ic95": [5.5, 8.8],
   "estrato": {"variable": "bw", "valor": 1, "n": 224},
   "estado_puerta": "pasa",
-  "version": "v0008"
+  "version": "v0009"
 }
 ```
 
@@ -793,7 +807,7 @@ estrato cuando es aplicable; su `placebo` remite al diagnóstico poblacional.
 == Proyección de heterogeneidad: `POST /heterogeneidad`
 
 Requiere las 25 covariables. Como todas las escalas del escenario admiten cero, este
-perfil es un ejemplo estructuralmente válido para `v0008`:
+perfil es un ejemplo estructuralmente válido para `v0009`:
 
 ```sh
 curl -sS -X POST http://127.0.0.1:8000/heterogeneidad \
@@ -809,9 +823,15 @@ curl -sS -X POST http://127.0.0.1:8000/heterogeneidad \
 
 La respuesta tiene `estado = respuesta`, `tipo = heterogeneidad_estimada`, `proyeccion`,
 `ic95`, `ajuste_r2 = 0.095`, `confianza_discriminacion = baja` y `n_entrenamiento = 448`.
-No tiene el campo `efecto`. `sensibilidad.aplicable` y `placebo.aplicable` son `false`.
-El bloque `identificacion` copiado del bundle se refiere al ATE poblacional, no identifica
-ese perfil.
+El *objeto principal del perfil* no tiene el campo `efecto`; `sensibilidad.aplicable` y
+`placebo.aplicable` son `false`. El bloque `identificacion` copiado del bundle se refiere
+al ATE poblacional, no identifica ese perfil.
+
+El bloque separado `diagnosticos_globales` sí contiene el ATE e IC globales, sensibilidad
+—incluidos Rosenbaum y Manski—, placebos, identificación y sus lecturas. Es referencia
+poblacional: no pertenece al perfil ni valida su proyección. El formato texto y `/calcular`
+muestran *1. Proyección del perfil* y *2. Diagnósticos globales del ATE* en secciones
+independientes; no deben combinarse sus inferencias.
 
 *Interpretación.* Es una proyección lineal del score AIPW con IC condicional al ajuste
 (`v'Cov(beta)v`). No es un CATE identificado, un efecto individual, un intervalo de
@@ -833,7 +853,10 @@ informe de estado, no un chequeo binario de autorización: HTTP 200 puede coexis
 debe leer el cuerpo y aplicar las reglas de las secciones 9 y 10, no considerar saludable
 todo lo que responda 200. En cambio, el `HEALTHCHECK` del Dockerfile sí exige
 `estado = ok`, `integridad_valida = true`, `estado_puerta = pasa` y la versión esperada
-(`v0008` por defecto); un HTTP 200 sin esas condiciones deja el contenedor no saludable.
+(`v0009` por defecto); un HTTP 200 sin esas condiciones deja el contenedor no saludable.
+Además, `sensibilidad` ofrece `rosenbaum_interpretacion`, `rosenbaum_limites`,
+`manski_interpretacion` y `manski_limites`; cada placebo resume `interpretacion` y
+`que_no_prueba`.
 
 = Integración con aplicaciones y con otros datos
 
@@ -954,7 +977,7 @@ Se espera HTTP 200 y un cuerpo semejante a:
   "tipo": "estrato",
   "motivo": "bw=99 fuera de [-3.1332, 3.0532]",
   "estado_puerta": "pasa",
-  "version": "v0008"
+  "version": "v0009"
 }
 ```
 
@@ -1007,7 +1030,7 @@ transaccional*: la promoción puede ocurrir antes del monitor y no hay rollback 
 si una etapa posterior falla. En ese caso el servicio puede bloquear respuestas, pero la
 promoción no se deshace sola.
 
-`v0001`–`v0007` se conservan intactos y el champion de este paquete es `v0008`. No edites
+`v0001`–`v0008` se conservan intactos y el champion de este paquete es `v0009`. No edites
 un JSON versionado para «corregir» una cifra: vuelve a estimar y registra otra versión.
 
 = Evidencia, mantenimiento y regeneración
@@ -1031,7 +1054,7 @@ un JSON versionado para «corregir» una cifra: vuelve a estimar y registra otra
 )
 
 `README.md` resume la operación; `AUDITORIA.md` enlaza el código publicado;
-`docs/pregunta_ihdp.md` conserva la pregunta; `artifacts/registro/v0008/` es la fuente del
+`docs/pregunta_ihdp.md` conserva la pregunta; `artifacts/registro/v0009/` es la fuente del
 champion. Si una frase del manual y una respuesta difieren, comprueba primero versión y
 artefactos: no presentes como actual una cifra de otra versión.
 
@@ -1111,9 +1134,10 @@ una sustitución de las pruebas en el equipo de cada usuario.
     [No ejecutado: el plugin Compose no estaba instalado],
   [Windows / lanzador gráfico],
     [Compilación MSVC y `ctest --self-test` en `windows-2022`, ejecución Actions 43322853322],
-    [Ambas superadas. Publicar exige también instalación y arranque `--smoke-test`, integridad,
-    puerta `pasa` y `/efecto` válidos; los assets no se adjuntan si falla. Falta comprobar la
-    interacción gráfica en el PC del usuario],
+    [Ambas superadas con `v0008`. Publicar exige también instalación y arranque `--smoke-test`,
+    integridad, puerta `pasa` y `/efecto` válidos; los assets no se adjuntan si falla. Falta
+    comprobar la interacción gráfica en el PC del usuario y repetir la prueba integral con
+    `v0009`],
   [Windows / PowerShell],
     [Revisión estática de los `.ps1` y comandos, compatibles con sintaxis 5.1],
     [Scripts no ejecutados en Windows nativo; el lanzador recomendado no depende de ellos],
@@ -1195,8 +1219,9 @@ Para una defensa de 15 minutos (10 de exposición y 5 de preguntas):
 
 1. Muestra `monitor_estado.json` y `evidencia/05_puerta.txt` para explicar puerta y
    abstención; complementa con `evidencia/07_servicio.txt`.
-2. Explica ignorabilidad como supuesto no observable acotado por E-value 2,07 (IC 1,85)
-   y RV OLS 37,4 %; nunca como supuesto demostrado.
+2. Explica ignorabilidad como supuesto no observable acotado por E-value 2,07 (IC 1,85),
+   RV OLS 37,4 % y Rosenbaum Γ 2,21 para su contraste emparejado; nunca como supuesto
+   demostrado ni como una única medida del AIPW.
 3. Indica qué haría retirar la recomendación: confusión suficiente, fallo de placebo,
    ruptura de solapamiento o deriva clasificada como reentrenar/abstenerse. Si no puedes
    mostrar el artefacto o reproducir la cifra, no la presentes como evidencia propia.
@@ -1219,13 +1244,13 @@ Para una defensa de 15 minutos (10 de exposición y 5 de preguntas):
   [2.3], [Estimación con intervalo y validación], [Completo],
     [Sección 6: AIPW K=5, IC, comparadores, particiones y cobertura en DGP propio],
   [2.4], [Interpretación y sensibilidad], [Completo],
-    [Sección 7: E-value, RV, Manski y límites],
+    [Sección 7: E-value, RV, Rosenbaum Γ, Manski y límites],
   [3.1], [Servicio y contrato], [Completo],
     [Secciones 8–10: endpoints, `proyeccion`, IC condicional, alias y abstención; `humo.py`],
   [3.2], [Model card completa y propia], [Completo],
     [`tarjeta.json`: uso previsto, limitaciones, soporte y puerta],
   [3.3], [Registro con manifiesto], [Completo],
-    [Champion `v0008`, versiones y bloqueo de `falla`; registro → monitor no transaccional],
+    [Champion `v0009`, versiones y bloqueo de `falla`; registro → monitor no transaccional],
   [4.1], [Señales con umbral y acción], [Completo],
     [Sección 11: PSI, SMD, ESS, solape, estabilidad y sensibilidad local ±20 %],
   [4.2], [Regla de decisión probada], [Completo],

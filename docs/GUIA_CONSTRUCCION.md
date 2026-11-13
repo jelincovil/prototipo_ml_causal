@@ -109,7 +109,7 @@ Un manifest abreviado muestra el tipo de contrato que debe leerse, no una planti
 
 ```json
 {
-  "version": "v0008",
+  "version": "v0009",
   "schema_version": "1.2",
   "puerta": "pasa",
   "archivos": {
@@ -119,7 +119,7 @@ Un manifest abreviado muestra el tipo de contrato que debe leerse, no una planti
 }
 ```
 
-Los campos reales de `v0008` incluyen también `dataset_sha256`, hashes duplicados por conveniencia y `alias_version`; el esquema de respuesta debe comprobarse en el artefacto concreto. La puerta inicial del manifest no sustituye al monitor posterior.
+Los campos reales de `v0009` incluyen también `dataset_sha256`, hashes duplicados por conveniencia y `alias_version`; el esquema de respuesta debe comprobarse en el artefacto concreto. La puerta inicial del manifest no sustituye al monitor posterior.
 
 ### Práctica autónoma
 
@@ -338,9 +338,10 @@ La función `demo_mutacion()` ilustra una mutación creando y luego eliminando `
 
 La identificación se declara mediante un DAG y un conjunto de ajuste. La estrategia es backdoor sobre covariables observadas pre-tratamiento, no selección automática de predictores. Bajo ignorabilidad condicional, positividad y consistencia/SUTVA, el ATE se escribe:
 
-$$
-\tau=E[Y(1)-Y(0)]=E_X\!\left(E[Y\mid X,D=1]-E[Y\mid X,D=0]\right).
-$$
+```{=typst}
+$ tau &= E[Y(1) - Y(0)] \
+      &= E_X (E[Y | X, D = 1] - E[Y | X, D = 0]). $
+```
 
 Esta fórmula separa el parámetro identificado de su estimación. DoWhy opera sobre el DAG y los metadatos declarados: no prueba que esos supuestos se cumplan. Los diagnósticos pueden revelar problemas, pero no sustituyen la defensa del diseño.
 
@@ -434,20 +435,20 @@ La implementación usa **K = 5** y semilla **4242**. En cada pliegue ajusta fuer
 
 Predice dentro del pliegue, de modo que cada observación recibe nuisances **out-of-fold**. Después aplica **acotación (llamada trimming en artefactos)** a la propensión, `np.clip(e, 0.05, 0.95)`, y calcula:
 
-$$
-\psi_i = \hat\mu_1(X_i)-\hat\mu_0(X_i)
-+ \frac{D_i\{Y_i-\hat\mu_1(X_i)\}}{\tilde e_i}
-- \frac{(1-D_i)\{Y_i-\hat\mu_0(X_i)\}}{1-\tilde e_i},
-\qquad \tilde e_i=\operatorname{clip}(\hat e_i,0.05,0.95).
-$$
+```{=typst}
+$ psi_i = {} & hat(mu)_1(X_i) - hat(mu)_0(X_i) \
+           & + (D_i {Y_i - hat(mu)_1(X_i)}) / tilde(e)_i \
+           & - ((1 - D_i){Y_i - hat(mu)_0(X_i)}) / (1 - tilde(e)_i), \
+           & tilde(e)_i = "clip"(hat(e)_i, 0.05, 0.95). $
+```
 
 El estimador y su incertidumbre son:
 
-$$
-\widehat{ATE}=\frac1n\sum_{i=1}^n\psi_i,
-\qquad \widehat{SE}=\frac{s_\psi}{\sqrt n},
-\qquad IC_{95}=\widehat{ATE}\pm1.96\,\widehat{SE},
-$$
+```{=typst}
+$ hat("ATE") &= 1 / n sum_(i = 1)^n psi_i, \
+  hat("SE")  &= s_psi / sqrt(n), \
+  "IC"_95    &= hat("ATE") plus.minus 1.96 thin hat("SE"). $
+```
 
 donde `sψ` es la desviación estándar muestral de los scores (`ddof=1`). El fragmento central se puede contrastar directamente con la fórmula:
 
@@ -470,9 +471,9 @@ El IC es una aproximación normal asintótica, no una garantía de cobertura exa
 
 Con `w_i=D_i/\tilde e_i+(1-D_i)/(1-\tilde e_i)` en la fila correspondiente, el ESS es:
 
-$$
-ESS=\frac{(\sum_i w_i)^2}{\sum_i w_i^2}.
-$$
+```{=typst}
+$ "ESS" = (sum_i w_i)^2 / (sum_i w_i^2). $
+```
 
 El SMD ponderado compara medias ponderadas una covariable a la vez y las normaliza con las varianzas ponderadas de ambos brazos. Es un diagnóstico muestral, no una corrección del ATE ni una prueba de balance poblacional. No certifica balance conjunto ni igualdad de formas o relaciones no lineales.
 
@@ -486,9 +487,9 @@ Dos estimaciones distintas no demuestran heterogeneidad: para sostener un contra
 
 `modelo_individual()` ajusta una proyección lineal:
 
-$$
-\psi_i = \beta_0 + Z_i^\top\beta + \varepsilon_i,
-$$
+```{=typst}
+$ psi_i = beta_0 + Z_i^top beta + epsilon_i, $
+```
 
 con `X` estandarizada. Guarda intercepto, coeficientes, medias, desviaciones, covarianza de coeficientes, `R²`, `n` y semilla. Para un perfil, la API usa ese modelo y la varianza `v'Cov(β)v` para un IC **condicional al ajuste**. Es una proyección de pseudo-scores, no un CATE individual identificado, y el IC no incorpora toda la incertidumbre de los scores ni el error de especificación. El `R²` mide ajuste *in-sample* a esos pseudo-scores, no el porcentaje de heterogeneidad causal explicada.
 
@@ -496,7 +497,7 @@ con `X` estandarizada. Guarda intercepto, coeficientes, medias, desviaciones, co
 
 ### Evidencia existente, no resultado garantizado
 
-La versión conservada **`v0008`** contiene, como ejemplo de evidencia ya existente, un ATE AIPW de **5,2 puntos** con IC 95 % **[3,9; 6,4]**. No es una cifra garantizada para otra copia, entorno, modificación o versión. El estudio debe contrastar el artefacto efectivamente cargado y no copiar ese resultado como expectativa universal.
+La versión conservada **`v0009`** contiene, como ejemplo de evidencia ya existente, un ATE AIPW de **5,2 puntos** con IC 95 % **[3,9; 6,4]**. No es una cifra garantizada para otra copia, entorno, modificación o versión. El estudio debe contrastar el artefacto efectivamente cargado y no copiar ese resultado como expectativa universal.
 
 ### Decisión de diseño
 
@@ -527,12 +528,14 @@ Ejercicios adicionales:
 
 ### Responsabilidad
 
-`sensibilidad.py` ofrece tres perspectivas de sensibilidad y dos controles de calibración. Recibe columnas y resultados ya calculados; no lee CSV ni `interventions.json`.
+`sensibilidad.py` ofrece cuatro perspectivas de sensibilidad y dos controles de calibración. Recibe columnas y resultados ya calculados; no lee CSV ni `interventions.json`.
 
 ### Funciones clave reales
 
 - `e_value_continuo()`;
 - `valor_robustez()`;
+- `cota_gamma_rosenbaum()`;
+- `p_superior_rosenbaum()`;
 - `cotas_manski()`;
 - `resumen_sensibilidad()`;
 - `placebo_permutacion()`;
@@ -546,9 +549,9 @@ El resultado se incorpora a `estimacion.json` bajo `sensibilidad` y `placebo`. A
 
 Para un resultado continuo se estandariza `d=|ATE|/sd(Y)` y se aproxima una razón de riesgos mediante `RR ≈ exp(0.91·d)`. Después se calcula:
 
-$$
-E=RR+\sqrt{RR(RR-1)}, \qquad RR>1.
-$$
+```{=typst}
+$ E = "RR" + sqrt("RR"("RR" - 1)), quad "RR" > 1. $
+```
 
 Para el intervalo se usa el límite más cercano a cero; si el IC contiene cero, el E-value del límite es 1.
 
@@ -559,6 +562,14 @@ Para el intervalo se usa el límite más cercano a cero; si el IC contiene cero,
 `valor_robustez()` usa `t` y grados de libertad del **OLS ajustado** para obtener la fuerza parcial mínima de confusión que reduciría su coeficiente a cero bajo el modelo lineal de sesgo por omisión.
 
 Es exacto bajo ese marco lineal para OLS. **No es una propiedad exacta del AIPW**, aunque ambos resultados viajen juntos en el bundle.
+
+### Cota Γ clásica de Rosenbaum
+
+`cota_gamma_rosenbaum()` empareja cada tratado con un control 1:1 sin reemplazo, por vecino más próximo en el logit de la propensión fuera de pliegue y con caliper `0,2·DE(logit)`. Después aplica Wilcoxon unilateral a las diferencias tratado menos control, elimina ceros y usa rangos promedio para empates. La aproximación normal emplea `p=Γ/(1+Γ)`, media `p·Σq` y varianza `p(1-p)·Σq²`, sin corrección de continuidad. Busca la primera Γ cuya cota superior del valor p excede 0,05 e interpola el cruce por bisección.
+
+En los artefactos actuales de IHDP, **Γ≈2,21**, **p(Γ=1)≈1,87×10⁻⁹** y se retienen **179 pares**; 12 tratados quedan sin pareja. Esto significa que odds ocultas de asignación de magnitud aproximada 2,21 ya podrían hacer que el contraste emparejado dejara de rechazar la nula al 5 %. No significa que un confusor de esa magnitud exista ni que el ATE pueda explicarse por un factor 2,21.
+
+**Esta Γ caracteriza el contraste de Wilcoxon de los pares retenidos, no el ATE AIPW.** Depende del emparejamiento, del caliper y de la aproximación normal, y no demuestra ignorabilidad. El champion `v0009` incluye este campo con `lectura` y `limites`; `/efecto` lo devuelve dentro de `sensibilidad.rosenbaum` y `/salud` expone su resumen interpretado.
 
 ### Cotas de Manski
 
@@ -590,28 +601,29 @@ La evaluación genuina es una **rúbrica de dimensiones**, no una suma de semáf
 | Identificación | DAG, ignorabilidad, positividad y consistencia/SUTVA | supuestos defendidos, no verificados automáticamente |
 | Soporte y balance | extremos, solape, ESS y SMD conjuntamente | ninguna señal aislada certifica comparabilidad multivariable |
 | Estabilidad y especificación | estimadores, particiones y sensibilidad de decisiones | diferencias orientan revisión; no prueban sesgo eliminado ni diferencias causales |
-| Sensibilidad | E-value, RV, Manski y controles | perspectivas parciales bajo supuestos distintos, no prueba de ausencia de confusión |
+| Sensibilidad | E-value, RV, Rosenbaum Γ, Manski y controles | perspectivas parciales bajo supuestos distintos, no prueba de ausencia de confusión |
 | Calibración | comportamiento de placebos y cobertura Monte Carlo | cada calibración pertenece a su construcción o DGP, no se transfiere a IHDP |
 
 Un IC completamente positivo indica compatibilidad con efectos positivos **bajo el modelo y sus supuestos**, no prueba causalidad. Un IC que incluye cero no prueba efecto nulo; uno ancho puede admitir efectos beneficiosos, nulos o dañinos y ser poco concluyente. Evita sustituir esta lectura por un umbral de `p`, por dicotomías significativo/no significativo o por comparar visualmente solapes de intervalos.
 
-**Ejemplo con `v0008`, no resultado garantizado para otra versión:**
+**Ejemplo con `v0009`, no resultado garantizado para otra versión:**
 
 - El ATE AIPW es **5,157 puntos**, SE **0,626** e IC 95 % **[3,930; 6,384]**. Describe un promedio, no un cambio de 5,157 en cada individuo.
 - El contraste crudo es **10,327** y OLS ajustado **4,799**: el ajuste importa descriptivamente, pero esas diferencias no miden cuánto sesgo se eliminó ni validan la especificación.
 - El rango OOF es **[0,043; 0,916]**; hubo **1 propensión acotada**, no una fila eliminada. `ESS/n = 0,742` señala pérdida de eficiencia por ponderación. El SMD ponderado máximo baja de **0,429** sin ponderar a **0,113**, una mejora descriptiva que no certifica soporte ni balance conjunto.
 - Reentrenando por particiones, `validation` da **1,933 [-2,448; 6,314]** y `test` **1,630 [-3,915; 7,176]**. Son puntos menores e intervalos anchos: estabilidad limitada e imprecisa, no una diferencia demostrada sin estimar el contraste correspondiente.
 - Los estratos de `bw` alto y bajo dan **7,155** y **3,159**: sugieren heterogeneidad agregada, pero falta estimar su contraste con incertidumbre. La proyección tiene `R² = 0,095`, bajo, y ese ajuste a pseudo-scores no mide heterogeneidad causal.
-- El E-value aproximado es **2,073** para el punto y **1,852** para el límite; el RV **37,4 %** pertenece a OLS, no a AIPW. Manski da **[-37,656; 48,477]**, contiene cero y expresa identificación parcial: no es un IC y, sin ignorabilidad, bajo ese soporte no identifica el signo.
+- El E-value aproximado es **2,073** para el punto y **1,852** para el límite; el RV **37,4 %** pertenece a OLS, no a AIPW. En `v0009`, Rosenbaum da **Γ≈2,21 con 179 pares** para su contraste de Wilcoxon, no para AIPW. Manski da **[-37,656; 48,477]**, contiene cero y expresa identificación parcial: no es un IC y, sin ignorabilidad, bajo ese soporte no identifica el signo.
 
-En conjunto, `v0008` es compatible con un efecto ajustado positivo en el DGP sintético bajo los supuestos declarados, con precisión razonable en `train` y sin un fallo inmediato en los controles conservados. La estabilidad entre particiones es limitada e imprecisa; identificación depende de supuestos y los placebos no demuestran ausencia de confusión. Esto no produce una recomendación ni una conclusión sobre niños reales. Que la puerta pase solo indica cumplimiento de umbrales en la ventana operativa seleccionada: no mide calidad científica ni anula los resultados de estrés.
+En conjunto, `v0009` es compatible con un efecto ajustado positivo en el DGP sintético bajo los supuestos declarados, con precisión razonable en `train` y sin un fallo inmediato en los controles conservados. La estabilidad entre particiones es limitada e imprecisa; identificación depende de supuestos y los placebos no demuestran ausencia de confusión. Esto no produce una recomendación ni una conclusión sobre niños reales. Que la puerta pase solo indica cumplimiento de umbrales en la ventana operativa seleccionada: no mide calidad científica ni anula los resultados de estrés.
 
 Práctica autónoma:
 
 1. calcula el E-value para un IC que cruza cero y justifica el resultado del límite;
 2. reproduce el ejemplo cerrado de Manski usado en `pruebas_estimacion.py` y verifica que el ancho es `U-L`;
-3. explica por qué el valor de robustez no debe etiquetarse como «RV AIPW exacto»;
-4. diseña una situación con confusión real donde un placebo pueda pasar.
+3. comprueba el caso manual de Rosenbaum y explica por qué su Γ no pertenece al AIPW;
+4. explica por qué el valor de robustez no debe etiquetarse como «RV AIPW exacto»;
+5. diseña una situación con confusión real donde un placebo pueda pasar.
 
 Contrasta tus respuestas con las pruebas de fórmulas, sin esperar que esas pruebas validen los supuestos causales.
 
@@ -802,12 +814,14 @@ La puerta `alerta`, `reentrenar` o `revisar_identificacion` **no bloquea por sí
 |---|---|---|
 | `GET /efecto` | ninguna | ATE AIPW, IC, versión, identificación, sensibilidad y placebos |
 | `POST /consulta` | para IHDP exige `bw`; otras covariables presentes se contrastan con sus rangos | media de scores AIPW del estrato de `bw` e IC |
-| `POST /heterogeneidad` | exige las 25 covariables | `proyeccion`, IC condicional, `R²` y advertencias |
+| `POST /heterogeneidad` | exige las 25 covariables | `proyeccion`, IC condicional, `R²`, advertencias y el bloque separado `diagnosticos_globales` |
 | `POST /efecto_individual` | mismo perfil | alias deprecado de `/heterogeneidad` |
 | `GET /salud` | ninguna | estado, versión, puerta, integridad y resúmenes |
 | `GET /` y `GET /calcular` | formulario | interfaz e informe de heterogeneidad |
 
 `/consulta` no devuelve un CATE individual. `/heterogeneidad` tampoco: usa la proyección lineal almacenada y advierte el alcance condicional del IC. `/efecto_individual` conserva el núcleo de respuesta y añade la deprecación. El formulario de `GET /` o `GET /calcular` es la vía prevista para construir un perfil con las 25 `X`, en lugar de escribir ese JSON a mano.
+
+La respuesta de heterogeneidad separa dos inferencias. El objeto principal contiene la **proyección del perfil**; `diagnosticos_globales` contiene el **ATE poblacional**, su IC, sensibilidad —incluidos Rosenbaum y Manski—, placebos e identificación como referencia global. Estos diagnósticos no son específicos del perfil ni validan su proyección. En `formato=texto` y en el formulario `/calcular`, las secciones **1. Proyección del perfil** y **2. Diagnósticos globales del ATE** mantienen visible esa separación.
 
 Ejemplo ilustrativo de `POST /consulta` con una sola covariable de corte:
 
@@ -956,7 +970,7 @@ La instalación descrita en la sección 3 termina con `uv pip check` y la versi�
 5. hashes de evidencia;
 6. si se arranca el servicio, `/salud` y `/efecto`.
 
-Ninguno de esos pasos exige promover. Las cifras de `v0008` describen evidencia existente y no sustituyen la comprobación en otro entorno.
+Ninguno de esos pasos exige promover. Las cifras de `v0009` describen evidencia existente y no sustituyen la comprobación en otro entorno.
 
 ### Docker
 
@@ -971,7 +985,7 @@ La variable de imagen y Compose selecciona `synthetic/ihdp`. `healthcheck.py` ex
 
 Por tanto, una API que devuelve números bajo `alerta`, `reentrenar` o `revisar_identificacion` puede seguir respondiendo, pero **no supera el healthcheck de Docker**, que exige `pasa`.
 
-`docker-compose.yml` fija actualmente `SIC_VERSION_ESPERADA=v0008`. Si cambia el champion incluido en la imagen, hay que actualizar ese valor y reconstruir la imagen; modificar el host no cambia un contenedor ya construido.
+`docker-compose.yml` fija actualmente `SIC_VERSION_ESPERADA=v0009`. Si cambia el champion incluido en la imagen, hay que actualizar ese valor y reconstruir la imagen; modificar el host no cambia un contenedor ya construido.
 
 Construir o arrancar Docker es una operación de **servicio**, no de promoción dentro del repositorio fuente. La imagen captura los artefactos presentes al construirla, de modo que hay que auditar primero qué champion se está empaquetando; no crea una versión nueva ni promueve.
 
@@ -1094,7 +1108,7 @@ Documenta qué se ejecutó realmente, qué quedó sin probar y qué cifras perte
 - [ ] Los rangos, solape y recuentos se sitúan antes de acotar; ESS y SMD ponderado usan la propensión acotada.
 - [ ] Leo ESS, solape, extremos y SMD juntos, sin confundir mediciones *in-sample* del monitor con OOF del champion.
 - [ ] Distingo IC normal asintótico de cobertura exacta y particiones reentrenadas de un *holdout* con champion congelado.
-- [ ] Las cifras históricas se atribuyen a su versión, sin tratar `v0008` como garantía.
+- [ ] Las cifras históricas se atribuyen a su versión, sin tratar `v0009` como garantía.
 - [ ] Evalúo conjuntamente estimando, magnitud/relevancia, precisión, identificación, soporte, estabilidad, sensibilidad y calibración, sin convertirlos en un *score*.
 - [ ] No deduzco relevancia práctica solo del IC ni causalidad de signo, `p`, placebos o solapes de IC.
 - [ ] Limito mis conclusiones a compatibilidad condicional en el escenario sintético; no las presento como recomendación ni como evidencia sobre niños reales.

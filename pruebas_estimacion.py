@@ -17,7 +17,8 @@ from datos import EsquemaCausal, leer
 from estimacion import (aipw_crossfit, ate_ols, diagnosticos_positividad,
                         smd_ponderado)
 from rutas import ARTEFACTOS, DATOS
-from sensibilidad import (control_negativo, cotas_manski, e_value_continuo,
+from sensibilidad import (control_negativo, cotas_manski, cota_gamma_rosenbaum,
+                          e_value_continuo, p_superior_rosenbaum,
                           placebo_permutacion, valor_robustez)
 
 
@@ -69,33 +70,57 @@ def main() -> int:
     np.testing.assert_allclose(m["ate"], [-1.0, 2.0])
     assert m["ancho"] == 3.0 and m["identificacion_puntual"] is False
 
-    # 4. SMD ponderado finito y con signo.
+    # 4. Rosenbaum: cálculo manual, empates, caliper y entrada binaria.
+    dif_rb = np.array([1.0, 2.0, -2.0, 0.0])
+    rb1 = p_superior_rosenbaum(dif_rb, 1.0)
+    np.testing.assert_allclose(rb1["estadistico"], 3.5)
+    np.testing.assert_allclose(rb1["media_peimista"], 3.0)
+    np.testing.assert_allclose(rb1["desviacion_pesimista"], np.sqrt(3.375))
+    np.testing.assert_allclose(rb1["n_diferencias_no_nulas"], 3)
+    assert p_superior_rosenbaum(dif_rb, 2.0)["p_superior"] > rb1["p_superior"]
+    y_rb = np.array([10.0, 12.0, 14.0, 1.0, 2.0, 1.5, 3.0, 4.0])
+    d_rb = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    e_rb = np.array([0.1, 0.3, 0.9, 0.1, 0.3, 0.9, 0.05, 0.8])
+    pareado_rb = cota_gamma_rosenbaum(y_rb, d_rb, e_rb, caliper_sd=0.2)
+    assert pareado_rb["n_pares"] == 3 and pareado_rb["gamma"] >= 1.0
+    assert "No es una cota de sensibilidad del ATE AIPW" in pareado_rb["limites"]
+    repetido_rb = cota_gamma_rosenbaum(y_rb, d_rb, e_rb, caliper_sd=0.2)
+    assert pareado_rb == repetido_rb
+    e_rb_distante = np.array([0.1, 0.3, 0.9, 0.11, 0.31, 0.91, 0.05, 0.8])
+    np.testing.assert_raises(ValueError, cota_gamma_rosenbaum, y_rb, d_rb, e_rb_distante,
+                             caliper_sd=1e-12)
+    np.testing.assert_raises(ValueError, p_superior_rosenbaum,
+                             np.array([0.0, 0.0]), 1.0)
+    np.testing.assert_raises(ValueError, cota_gamma_rosenbaum,
+                             y_rb, d_rb * 2.0, e_rb)
+
+    # 5. SMD ponderado finito y con signo.
     g = np.random.default_rng(7)
     v = g.normal(size=80)
     D = (g.random(80) < 0.5).astype(float)
     e = np.full(80, 0.5)
     assert np.isfinite(smd_ponderado(v, D, e))
 
-    # 5. OLS devuelve t/df/n/k para el valor de robustez.
+    # 6. OLS devuelve t/df/n/k para el valor de robustez.
     esquema = EsquemaCausal()
     col = leer("train")
     ols = ate_ols(col, esquema)
     assert {"t", "df", "n", "k"} <= set(ols)
     assert ols["df"] > 0
 
-    # 6. Placebo de tratamiento: n_rep exacto y p en [0, 1].
+    # 7. Placebo de tratamiento: n_rep exacto y p en [0, 1].
     p = placebo_permutacion(col, esquema, aipw_crossfit, n_rep=5, semilla=11)
     assert p["n_rep"] == 5
     assert 0.0 <= p["p_valor_aprox"] <= 1.0
     assert p["placebo_ic95"][0] <= p["placebo_ic95"][1]
 
-    # 7. Placebo de resultado: devuelve efecto e IC.
+    # 8. Placebo de resultado: devuelve efecto e IC.
     q = control_negativo(col, esquema, aipw_crossfit, variable="momage",
                          semilla=11)
     assert len(q["ic95"]) == 2
     assert q["ic95"][0] <= q["ic95"][1]
 
-    # 8. Diagnósticos de positividad: estructura y coherencia interna.
+    # 9. Diagnósticos de positividad: estructura y coherencia interna.
     D_pos = np.array([0.0, 1.0] * 5)
     e_pos = np.array([0.01, 0.04, 0.05, 0.20, 0.50,
                       0.80, 0.95, 0.96, 0.99, 0.60])
@@ -137,7 +162,7 @@ def main() -> int:
     assert 0.0 < pos["ess"] <= len(D_pos)
     assert pos["ess_sobre_n"] == pos["total"]["ess_sobre_n"]
 
-    # 9. Cobertura: mínimo coste razonable, rangos y reproducción exacta.
+    # 10. Cobertura: mínimo coste razonable, rangos y reproducción exacta.
     cob1 = cobertura.ejecutar(n=60, repeticiones=2, semilla=20261111)
     cob2 = cobertura.ejecutar(n=60, repeticiones=2, semilla=20261111)
     assert cob1 == cob2
@@ -174,7 +199,7 @@ def main() -> int:
             abs(metricas["cobertura_ic95"] - cobertura.NOMINAL)
             <= metricas["error_monte_carlo"])
 
-    # 10. Medir una vez y reclasificar: equivalencia y sensibilidad de umbrales.
+    # 11. Medir una vez y reclasificar: equivalencia y sensibilidad de umbrales.
     esquema_mon = EsquemaCausal(
         tratamiento="treatment", resultado="y", covariables=("x",))
     g_mon = np.random.default_rng(19)
@@ -223,7 +248,7 @@ def main() -> int:
     assert monitor.umbrales_escalados(
         dict(umbrales_mon, solape_min=0.95), 1.2)["solape_min"] == 1.0
 
-    # 11. El artefacto incluye el hash correcto del dataset.
+    # 12. El artefacto incluye el hash correcto del dataset.
     ruta = ARTEFACTOS / "estimacion.json"
     if ruta.exists():
         est = json.loads(ruta.read_text())
@@ -274,6 +299,12 @@ def main() -> int:
         assert sorted(got) == sorted(bench_set)
         assert ident.get("coincide_valid_adjustment_sets") is True
 
+        rosenbaum = est.get("sensibilidad", {}).get("rosenbaum") or {}
+        assert rosenbaum.get("gamma") is not None and rosenbaum["gamma"] >= 1.0
+        assert 0.0 < rosenbaum["p_gamma_1"] <= rosenbaum["alpha"]
+        assert rosenbaum["p_gamma_cota"] > rosenbaum["alpha"]
+        assert rosenbaum["n_pares"] >= 2
+        assert "no es una cota del ATE AIPW" in rosenbaum["objeto"]
         manski = est.get("sensibilidad", {}).get("cotas_manski") or {}
         assert len(manski.get("ate", [])) == 2
         assert manski["ate"][0] <= manski["ate"][1]
@@ -283,7 +314,7 @@ def main() -> int:
         assert placebo.get("tratamiento_permutado_pasa") is True
         assert placebo.get("resultado_permutado_pasa") is True
 
-    # 12. La pared: ni el estimador ni la sensibilidad leen interventions.json.
+    # 13. La pared: ni el estimador ni la sensibilidad leen interventions.json.
     #    Se permite mencionarlo en un docstring; se rechazan lecturas reales.
     for nombre in ("estimacion.py", "sensibilidad.py"):
         for linea in Path(nombre).read_text().splitlines():
