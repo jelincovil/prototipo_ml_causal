@@ -264,11 +264,11 @@ La vía más simple no exige abrir Terminal, PowerShell ni CMD:
 + Haz doble clic y pulsa *Instalar / verificar*.
 + Pulsa *Iniciar servicio* y después *Abrir ATE*.
 
-El lanzador instala el código de la versión publicada, `uv` 0.13.8 y Python 3.13 en
+El lanzador `v1.0.4` instala su código publicado, `uv` 0.13.8 y Python 3.13 en
 `%LOCALAPPDATA%\PuenteCausal`, no en `Documents`. Reutiliza un entorno válido al repetir la
 instalación. *Reparar entorno* pide confirmación, conserva el anterior en `respaldo/` y crea
 uno nuevo. Ejecuta Uvicorn directamente con `synthetic/ihdp`; no activa una consola y no
-regenera estimaciones, artefactos ni el champion `v0008` fijado en ese release.
+regenera estimaciones, artefactos ni el champion `v0009` fijado en ese release.
 
 Los botones *Detener*, *Abrir /docs* y *Abrir registros* permiten operar y diagnosticar sin
 comandos. Cerrar el lanzador detiene el servicio que haya iniciado. Para desinstalar, detén

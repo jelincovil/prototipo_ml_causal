@@ -33,7 +33,7 @@ using namespace std::chrono_literals;
 
 constexpr wchar_t kWindowClass[] = L"PuenteCausalVentana";
 constexpr wchar_t kProjectUrl[] =
-    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.3";
+    L"https://codeload.github.com/jelincovil/prototipo_ml_causal/zip/refs/tags/v1.0.4";
 constexpr wchar_t kUvVersion[] = L"0.13.8";
 constexpr wchar_t kUvX64Url[] =
     L"https://github.com/astral-sh/uv/releases/download/0.13.8/"
@@ -46,7 +46,7 @@ constexpr wchar_t kUvX64Sha256[] =
 constexpr wchar_t kUvArm64Sha256[] =
     L"59e6d919bed1f72035e622a7c930058f08a8931c4c78ceaf9f56e7fb74dd2c48";
 constexpr wchar_t kBaseUrl[] = L"http://127.0.0.1:8000";
-constexpr wchar_t kChampion[] = L"v0008";
+constexpr wchar_t kChampion[] = L"v0009";
 constexpr UINT kMessageLog = WM_APP + 1;
 constexpr UINT kMessageDone = WM_APP + 2;
 constexpr int kInstall = 1001;
@@ -699,11 +699,11 @@ void MoveAside(const fs::path& source, const std::wstring& label) {
 
 void EnsureSource() {
     if (SourceIsComplete()) {
-        AppendLog(L"El código fuente y el champion v0008 ya están presentes; se reutilizan.");
+        AppendLog(L"El código fuente y el champion v0009 ya están presentes; se reutilizan.");
         return;
     }
     fs::path root = InstallRoot();
-    fs::path archive = root / L"descargas" / L"prototipo-v1.0.3.zip";
+    fs::path archive = root / L"descargas" / L"prototipo-v1.0.4.zip";
     fs::path extracted = root / L"trabajo" / L"fuente";
     RemoveOwnedDirectory(extracted);
     DownloadFile(kProjectUrl, archive);
@@ -721,7 +721,7 @@ void EnsureSource() {
     RemoveOwnedDirectory(extracted);
     if (!SourceIsComplete()) {
         throw std::runtime_error(WideToUtf8(
-            L"El paquete instalado está incompleto o no incluye el champion v0008."));
+            L"El paquete instalado está incompleto o no incluye el champion v0009."));
     }
     AppendLog(L"Código instalado en " + AppRoot().wstring());
 }
@@ -1098,7 +1098,7 @@ void BuildInterface(HWND window) {
     SendMessageW(title, WM_SETFONT, reinterpret_cast<WPARAM>(g_title_font), TRUE);
     MakeControl(L"STATIC",
                 L"Windows sin terminal: 1) instala, 2) inicia, 3) abre el ATE. "
-                L"Datos sintéticos; champion v0008; escenario synthetic/ihdp.",
+                L"Datos sintéticos; champion v0009; escenario synthetic/ihdp.",
                 WS_CHILD | WS_VISIBLE, 26, 60, 790, 38);
     g_path = MakeControl(L"EDIT", InstallRoot().wstring().c_str(),
                          WS_CHILD | WS_VISIBLE | ES_READONLY | ES_AUTOHSCROLL,
@@ -1287,7 +1287,7 @@ int SmokeTest() {
             return 32;
         }
         Health health = CheckHealth(3000);
-        if (!health.ours || !health.integrity || health.version != "v0008" ||
+        if (!health.ours || !health.integrity || health.version != "v0009" ||
             health.gate != "pasa") {
             StopOwnedService();
             return 33;
@@ -1346,8 +1346,8 @@ int SelfTest() {
         return 15;
     }
     Health health = ParseHealth(
-        R"({"estado":"ok","version":"v0008","integridad_valida": true,"estado_puerta":"pasa"})");
-    if (!health.ours || !health.integrity || health.version != "v0008" || health.gate != "pasa") {
+        R"({"estado":"ok","version":"v0009","integridad_valida": true,"estado_puerta":"pasa"})");
+    if (!health.ours || !health.integrity || health.version != "v0009" || health.gate != "pasa") {
         return 11;
     }
     if (ParseHealth("not json").ours) {

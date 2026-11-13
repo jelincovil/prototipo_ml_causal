@@ -6,7 +6,7 @@
 2. Haz doble clic y pulsa **Instalar / verificar**.
 3. Pulsa **Iniciar servicio** y después **Abrir ATE**.
 
-El navegador mostrará **http://127.0.0.1:8000/efecto**. El lanzador instala en `%LOCALAPPDATA%\PuenteCausal`, muestra sus errores y registros, y no exige abrir una terminal, permisos de administrador, .NET SDK ni herramientas de compilación. Usa de forma oculta el PowerShell incluido en Windows solo para descomprimir archivos. Lee [uso, desinstalación y diagnóstico](instalador_windows/LEEME.md). El binario no está firmado comercialmente, por lo que Windows SmartScreen puede advertir. Este lanzador está fijado al release `v1.0.3` y conserva su champion `v0008`; para usar el champion `v0009` de `main`, emplea los scripts o Docker.
+El navegador mostrará **http://127.0.0.1:8000/efecto**. El lanzador instala en `%LOCALAPPDATA%\PuenteCausal`, muestra sus errores y registros, y no exige abrir una terminal, permisos de administrador, .NET SDK ni herramientas de compilación. Usa de forma oculta el PowerShell incluido en Windows solo para descomprimir archivos. Lee [uso, desinstalación y diagnóstico](instalador_windows/LEEME.md). El binario no está firmado comercialmente, por lo que Windows SmartScreen puede advertir. El lanzador `v1.0.4` está fijado al champion `v0009`, igual que los scripts y Docker de `main`.
 
 ## Puesta en marcha en 1 comando
 

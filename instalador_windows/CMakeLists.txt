@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(PuenteCausal VERSION 1.0.3 LANGUAGES CXX RC)
+project(PuenteCausal VERSION 1.0.4 LANGUAGES CXX RC)
 
 if(NOT WIN32)
   message(FATAL_ERROR "PuenteCausal solo se compila para Windows.")
