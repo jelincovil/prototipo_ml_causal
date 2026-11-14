@@ -1,0 +1,20 @@
+{
+  "scenario_id": "synthetic/iv_tutoria",
+  "name": "Invitación aleatoria a tutoría y asistencia efectiva",
+  "data_origin": "SYNTHETIC - generado localmente con verdad conocida",
+  "treatment_column": "d",
+  "treatment": "Asistencia efectiva a la tutoría",
+  "outcome_column": "y",
+  "outcome": "Puntaje final",
+  "instrument_column": "z",
+  "instrument": "Invitación aleatoria a tutoría",
+  "covariates": [
+    "x1",
+    "x2"
+  ],
+  "unobserved_confounder": "U",
+  "estimand": "LATE entre compliers; no ATE poblacional",
+  "num_units": 2000,
+  "seed": 20261113,
+  "split_seed": 20240701
+}

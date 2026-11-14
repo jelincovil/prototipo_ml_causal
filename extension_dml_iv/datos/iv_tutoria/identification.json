@@ -1,0 +1,70 @@
+{
+  "scenario_id": "synthetic/iv_tutoria",
+  "strategy": "instrumental_variables",
+  "identification_status": "LATE identificable por diseño bajo los supuestos declarados",
+  "instruments": [
+    "z"
+  ],
+  "treatments": [
+    "d"
+  ],
+  "outcomes": [
+    "y"
+  ],
+  "latent_variables": [
+    "U"
+  ],
+  "graph": {
+    "nodes": [
+      "z",
+      "d",
+      "y",
+      "x1",
+      "x2",
+      "U"
+    ],
+    "edges": [
+      [
+        "z",
+        "d"
+      ],
+      [
+        "d",
+        "y"
+      ],
+      [
+        "x1",
+        "d"
+      ],
+      [
+        "x1",
+        "y"
+      ],
+      [
+        "x2",
+        "d"
+      ],
+      [
+        "x2",
+        "y"
+      ],
+      [
+        "U",
+        "d"
+      ],
+      [
+        "U",
+        "y"
+      ]
+    ]
+  },
+  "assumptions": {
+    "relevancia": "Se examina mediante la primera etapa",
+    "independencia": "Z se genera aleatoriamente",
+    "exclusion": "Z solo afecta Y mediante D en el escenario válido",
+    "monotonicidad": "No hay defiers por construcción del DGP",
+    "SUTVA": "Declarado; no verificable con este CSV",
+    "soporte": "Se declara; esta demo no emite un diagnóstico completo del soporte condicional"
+  },
+  "note": "La primera etapa no demuestra independencia, exclusión, monotonicidad ni SUTVA."
+}

@@ -1,0 +1,10 @@
+{
+  "estimando_referencia": "LATE_compliers",
+  "late_compliers": 1.9038700210416,
+  "ate_poblacional": 2.0054193224189643,
+  "proporcion_compliers": 0.4115,
+  "escenario": "valido",
+  "semilla": 20261113,
+  "n_unidades": 2000,
+  "uso": "SOLO evaluación posterior; prohibido como entrada de estimación o calibración"
+}

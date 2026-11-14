@@ -1,0 +1,17 @@
+{
+  "split_seed": 20240701,
+  "splits": {
+    "train": {
+      "n_rows": 1200,
+      "file_sha256": "ea8b0ed7ad920e8085831259bcdfb6581fe135736c1c5714020e371b4a68c6c0"
+    },
+    "validation": {
+      "n_rows": 400,
+      "file_sha256": "45db52c081beaefca100f48de85c0ae5f8f153dfd7e43aa9d1cee284256d0d7c"
+    },
+    "test": {
+      "n_rows": 400,
+      "file_sha256": "2df4b24dbb9816a698bd6cc34f9816b4d2412846c1e54a6ef780419d6e786207"
+    }
+  }
+}
