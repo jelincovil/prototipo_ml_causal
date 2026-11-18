@@ -314,6 +314,28 @@ def main() -> int:
         assert placebo.get("tratamiento_permutado_pasa") is True
         assert placebo.get("resultado_permutado_pasa") is True
 
+    # 12b. Compuerta de promoción: estructura, acuerdo y rechazo sintético.
+    cob_comp = cobertura.ejecutar(n=60, repeticiones=2, semilla=20261111)
+    compuerta = cob_comp["compuerta"]
+    assert {"pasa", "estimador", "umbrales", "problemas", "nota"} <= set(compuerta)
+    assert compuerta["estimador"] == "aipw"
+    assert compuerta["pasa"] == (not compuerta["problemas"])
+    assert np.isfinite(cob_comp["estimadores"]["aipw"]["cobertura_ic95"])
+    umbrales = compuerta["umbrales"]
+    assert (0.0 < umbrales["cobertura_ic95_min"]
+            < umbrales["cobertura_ic95_max"] <= 1.0)
+    assert umbrales["sesgo_abs_max"] > 0.0
+    # Fallos sintéticos: la compuerta no relaja resultados.
+    aipw_ok = dict(cob_comp["estimadores"]["aipw"])
+    sin_cobertura = dict(aipw_ok, cobertura_ic95=0.5)
+    sin_sesgo = dict(aipw_ok, sesgo=10 * cobertura.SESGO_ABS_MAX)
+    for metrica, clave in ((sin_cobertura, "cobertura"), (sin_sesgo, "sesgo")):
+        resultado_fallo = cobertura.verificar_compuerta(
+            {**cob_comp["estimadores"], "aipw": metrica})
+        assert resultado_fallo["pasa"] is False
+        assert resultado_fallo["problemas"]
+        assert any(clave in p for p in resultado_fallo["problemas"])
+
     # 13. La pared: ni el estimador ni la sensibilidad leen interventions.json.
     #    Se permite mencionarlo en un docstring; se rechazan lecturas reales.
     for nombre in ("estimacion.py", "sensibilidad.py"):

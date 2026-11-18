@@ -1,5 +1,5 @@
 # Prototipo causal local — semana 4 (make <objetivo>)
-.PHONY: verificar estimar registrar ventanas monitor servir serve humo pruebas cobertura dag evidencia cierre demo limpiar
+.PHONY: verificar estimar registrar ventanas monitor servir serve humo pruebas cobertura cobertura-compuerta dag evidencia cierre demo limpiar
 
 PYTHON ?= python3
 UVICORN ?= uvicorn
@@ -31,6 +31,9 @@ pruebas:            ## asserts de sensibilidad, placebo, positividad, monitor y 
 
 cobertura:          ## Monte Carlo del DGP ilustrativo propio; no evalúa IHDP/jobs
 	$(PYTHON) cobertura.py
+
+cobertura-compuerta:  ## misma simulación; sale con código 1 si la compuerta de promoción no pasa
+	$(PYTHON) cobertura.py --compuerta
 
 FIG = data_benchmark_causal/causal_benchmark_synthetic/datasets/figuras
 dag:                ## genera el DAG de una página, el detalle y el grafo de módulos

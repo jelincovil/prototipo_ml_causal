@@ -26,4 +26,4 @@ jobs:
       - name: verificar, pruebas y demo (synthetic/ihdp)
         env:
           SIC_ESCENARIO: synthetic/ihdp
-        run: make verificar pruebas demo
+        run: make verificar pruebas cobertura-compuerta demo

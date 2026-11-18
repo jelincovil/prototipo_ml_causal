@@ -42,6 +42,15 @@ Z_95 = 1.96
 ATE_VERDADERO = 2.0
 COVARIABLES = tuple(f"x{i}" for i in range(1, 7))
 
+# Compuerta de promoción (convención declarada, no calibración universal):
+# la promoción de una versión exige que el estimador principal (AIPW) cumpla
+# cobertura IC95 dentro de [0.90, 0.99] y |sesgo| <= 0.10 (5 % del ATE
+# verdadero de este DGP). Es evidencia frente a este DGP ilustrativo;
+# no generaliza a otros procesos de datos.
+COBERTURA_MIN = 0.90
+COBERTURA_MAX = 0.99
+SESGO_ABS_MAX = 0.10
+
 ADVERTENCIA = (
     "La cobertura solo aplica a este DGP ilustrativo propio. No demuestra "
     "identificación, ausencia de confusión, positividad ni calibración de IC "
@@ -100,6 +109,39 @@ def _validar_estimacion(nombre: str, resultado: dict[str, Any]) -> dict[str, Any
     if ic[0] > ic[1]:
         raise ValueError(f"{nombre}: extremos del IC invertidos")
     return {"ate": ate, "se": se, "ic": ic}
+
+
+def verificar_compuerta(metricas: dict) -> dict:
+    """Compuerta dura sobre las métricas ya computadas (la puerta de promoción).
+
+    Solo decide sobre ``aipw``, el estimador principal; OLS y el ingenuo quedan
+    como referencia informativa. Nunca relaja resultados: un fallo se reporta
+    explícitamente y la promoción queda bloqueada.
+    """
+    aipw = metricas["aipw"]
+    problemas = []
+    if not (COBERTURA_MIN <= aipw["cobertura_ic95"] <= COBERTURA_MAX):
+        problemas.append(
+            f"cobertura_ic95 de aipw = {aipw['cobertura_ic95']:.3f} fuera de "
+            f"[{COBERTURA_MIN}, {COBERTURA_MAX}]")
+    if abs(aipw["sesgo"]) > SESGO_ABS_MAX:
+        problemas.append(
+            f"|sesgo| de aipw = {abs(aipw['sesgo']):.4f} > {SESGO_ABS_MAX}")
+    return {
+        "pasa": not problemas,
+        "estimador": "aipw",
+        "umbrales": {
+            "cobertura_ic95_min": COBERTURA_MIN,
+            "cobertura_ic95_max": COBERTURA_MAX,
+            "sesgo_abs_max": SESGO_ABS_MAX,
+        },
+        "problemas": problemas,
+        "nota": (
+            "Convención inicial declarada para la puerta de promoción; no es "
+            "una calibración universal ni una garantía fuera de este DGP. "
+            "CI ejecuta esta compuerta sobre la corrida por defecto."
+        ),
+    }
 
 
 def _resumir_estimador(repeticiones: list[dict[str, Any]]) -> dict[str, Any]:
@@ -170,6 +212,13 @@ def _metadatos(n: int, repeticiones: int, semilla: int) -> dict[str, Any]:
             "SE e IC devueltos por aipw_crossfit con K=5 y su trimming declarado; "
             "IC95 = ATE +/- 1.96*SE"
         ),
+        "compuerta_promocion": {
+            "criterio": "IC95 de aipw dentro de [0.90, 0.99] y |sesgo| <= 0.10",
+            "naturaleza": (
+                "Convención inicial para la puerta de promoción; no es una "
+                "calibración universal ni una garantía fuera de este DGP."
+            ),
+        },
     }
 
 
@@ -223,6 +272,7 @@ def ejecutar(n: int = 500, repeticiones: int = 100, semilla: int = 20261111) -> 
             resultados[nombre].append(estimacion)
 
     metricas = {nombre: _resumir_estimador(filas) for nombre, filas in resultados.items()}
+    compuerta = verificar_compuerta(metricas)
     comparacion = {
         nombre: {
             "cobertura_ic95": filas["cobertura_ic95"],
@@ -237,6 +287,7 @@ def ejecutar(n: int = 500, repeticiones: int = 100, semilla: int = 20261111) -> 
     return {
         "metadatos": _metadatos(n, repeticiones, semilla),
         "estimadores": metricas,
+        "compuerta": compuerta,
         "resumen": {
             "nominal": NOMINAL,
             "comparacion_cobertura": comparacion,
@@ -265,6 +316,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--semilla", type=int, default=20261111, help="semilla reproducible")
     parser.add_argument(
+        "--compuerta", action="store_true",
+        help="sale con código 1 si la compuerta de promoción no pasa",
+    )
+    parser.add_argument(
         "--salida", type=Path, default=Path("artifacts/cobertura.json"),
         help="ruta del JSON (por defecto: artifacts/cobertura.json)",
     )
@@ -275,7 +330,12 @@ def main(argv: list[str] | None = None) -> int:
     args.salida.parent.mkdir(parents=True, exist_ok=True)
     args.salida.write_text(contenido, encoding="utf-8")
     print(json.dumps(resultado["resumen"], ensure_ascii=False, indent=2, allow_nan=False))
+    print(json.dumps(resultado["compuerta"], ensure_ascii=False, indent=2, allow_nan=False))
     print(f"Resultados guardados en: {args.salida}")
+    if args.compuerta and not resultado["compuerta"]["pasa"]:
+        print("COMPUERTA: FALLA — la promoción queda bloqueada")
+        return 1
+    print("COMPUERTA: PASA")
     return 0
 
 
