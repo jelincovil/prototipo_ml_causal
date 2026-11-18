@@ -202,6 +202,20 @@ def _propensity_fit(Xm: np.ndarray, d: np.ndarray):
     return predecir
 
 
+def folds_crossfit(n: int, k: int,
+                   semilla_folds: int = SEMILLA) -> list[np.ndarray]:
+    """Pliegues de cross-fitting: permutación con semilla repartida en k partes.
+
+    Invariante: los pliegues son disjuntos y su unión cubre exactamente
+    ``{0, ..., n-1}``. Es la condición sobre la que descansa que ningún
+    nuisance ve a la unidad que predice.
+    """
+    if k < 2 or n < k:
+        raise ValueError(f"cross-fitting inválido: n={n}, k={k}")
+    g = np.random.default_rng(semilla_folds)
+    return list(np.array_split(g.permutation(n), k))
+
+
 def aipw_crossfit(col: dict, esquema: EsquemaCausal, k: int = 5,
                   resultado: str | None = None,
                   semilla_folds: int = SEMILLA) -> dict:
@@ -215,10 +229,7 @@ def aipw_crossfit(col: dict, esquema: EsquemaCausal, k: int = 5,
     n = len(col[esquema.tratamiento])
     D, Y = col[esquema.tratamiento], col[y_key]
     X = np.column_stack([col[c] for c in esquema.covariables])
-    if k < 2 or n < k:
-        raise ValueError(f"cross-fitting inválido: n={n}, k={k}")
-    g = np.random.default_rng(semilla_folds)
-    folds = np.array_split(g.permutation(n), k)
+    folds = folds_crossfit(n, k, semilla_folds)
     mu1, mu0, e = np.empty(n), np.empty(n), np.empty(n)
     for fold in folds:
         # Cross-fitting: ningún nuisance ve a la unidad que predice.

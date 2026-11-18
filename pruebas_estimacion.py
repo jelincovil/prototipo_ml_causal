@@ -355,6 +355,26 @@ def main() -> int:
         else:
             raise AssertionError("la tarjeta sin estimando efectivo se aceptó")
 
+    # 12d. Invariantes de cross-fitting: particiones disjuntas que cubren todo.
+    from estimacion import folds_crossfit
+    for n_x, k_x in ((103, 5), (50, 4), (10, 2)):
+        pliegues = folds_crossfit(n_x, k_x, semilla_folds=7)
+        assert len(pliegues) == k_x
+        np.testing.assert_array_equal(
+            np.sort(np.concatenate(pliegues)), np.arange(n_x))
+        for i in range(len(pliegues)):
+            for j in range(i + 1, len(pliegues)):
+                assert np.intersect1d(pliegues[i], pliegues[j]).size == 0
+    # Reproducibilidad con la misma semilla y rechazo de n < k.
+    np.testing.assert_array_equal(
+        np.sort(folds_crossfit(103, 5, 7)[0]), np.sort(folds_crossfit(103, 5, 7)[0]))
+    try:
+        folds_crossfit(4, 5)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("folds_crossfit aceptó n < k")
+
     # 13. La pared: ni el estimador ni la sensibilidad leen interventions.json.
     #    Se permite mencionarlo en un docstring; se rechazan lecturas reales.
     for nombre in ("estimacion.py", "sensibilidad.py"):
