@@ -336,6 +336,24 @@ def main() -> int:
         assert resultado_fallo["problemas"]
         assert any(clave in p for p in resultado_fallo["problemas"])
 
+    # 12c. La puerta exige el estimando efectivo declarado.
+    import registro
+    base = {c: "x" for c in registro.CAMPOS_TARJETA}
+    base.update({
+        "supuestos": [{"nombre": "soporte común", "clase": "observable"}],
+        "puerta": {"acciones": {"continuar": "todo dentro de umbral"}},
+        "sensibilidad": {}, "placebo": {}, "identificacion": {},
+    })
+    registro.validar_tarjeta(base)  # no debe lanzar
+    sin_efectivo = {k: v for k, v in base.items() if k != "estimando_efectivo"}
+    for rota in (sin_efectivo, dict(base, estimando_efectivo="   ")):
+        try:
+            registro.validar_tarjeta(rota)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("la tarjeta sin estimando efectivo se aceptó")
+
     # 13. La pared: ni el estimador ni la sensibilidad leen interventions.json.
     #    Se permite mencionarlo en un docstring; se rechazan lecturas reales.
     for nombre in ("estimacion.py", "sensibilidad.py"):

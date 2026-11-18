@@ -234,13 +234,31 @@ def aipw_crossfit(col: dict, esquema: EsquemaCausal, k: int = 5,
 
     positividad = diagnosticos_positividad(e, D)
     propensiones_oof = e.copy()
+    recortadas = int(positividad["total"]["recortado_n"])
+    fraccion_recortada = recortadas / n
+    if recortadas > 0:
+        estimando_efectivo = (
+            "ATE en la población con solapamiento (ê recortado a [0.05, 0.95]; "
+            f"{recortadas} unidades fuera de la zona de solapamiento "
+            f"({fraccion_recortada:.1%})); el efecto poblacional no se "
+            "identifica en las colas")
+    else:
+        estimando_efectivo = (
+            "ATE poblacional (ê íntegramente en [0.05, 0.95]; sin recorte "
+            "efectivo)")
     e = np.clip(e, 0.05, 0.95)  # trimming declarado en la tarjeta
     score = (mu1 - mu0 + D * (Y - mu1) / e - (1 - D) * (Y - mu0) / (1 - e))
     ate = float(score.mean())
     se = float(score.std(ddof=1) / np.sqrt(n))
     return {"ate": ate, "se": se, "ic": [ate - 1.96 * se, ate + 1.96 * se],
             "scores": score, "propensiones_oof": propensiones_oof,
-            "diagnosticos_positividad": positividad}
+            "diagnosticos_positividad": positividad,
+            "estimando_efectivo": estimando_efectivo,
+            "trimming": {
+                "limite": [0.05, 0.95],
+                "unidades_recortadas": recortadas,
+                "fraccion_recortada": float(fraccion_recortada),
+            }}
 
 
 def estratos_heterogeneidad(score: np.ndarray, col: dict,
@@ -522,6 +540,8 @@ def estimar() -> dict:
         "ate_ols": ajustado["ate"], "se": ajustado["se"], "ic95": ajustado["ic"],
         "estimador_principal": "AIPW con cross-fitting (K=5, nuisances fuera de muestra)",
         "ate_aipw": aipw["ate"], "se_aipw": aipw["se"], "ic_aipw": aipw["ic"],
+        "estimando_efectivo": aipw["estimando_efectivo"],
+        "trimming": aipw["trimming"],
         "estratos": estratos,
         "modelo_individual": individual,
         "ate_trampa_score_post": trampa["ate"],

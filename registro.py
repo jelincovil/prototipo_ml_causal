@@ -14,7 +14,7 @@ from pathlib import Path
 from rutas import ARTEFACTOS, DATOS, ESCENARIO, REGISTRO
 
 CAMPOS_TARJETA = (
-    "estimando", "poblacion", "supuestos", "umbrales",
+    "estimando", "estimando_efectivo", "poblacion", "supuestos", "umbrales",
     "semilla", "dataset_sha256", "estimador", "uso_previsto",
     "limitaciones", "soporte", "puerta", "sensibilidad",
     "placebo", "identificacion", "version_esquema",
@@ -81,6 +81,7 @@ def construir_tarjeta(estimacion: dict) -> dict:
     ]
     return {
         "estimando": estimacion["estimando"],
+        "estimando_efectivo": estimacion["estimando_efectivo"],
         "poblacion": (f"los {estimacion['n']} individuos de observed_train.csv del "
                       f"escenario {estimacion.get('escenario', ESCENARIO)} "
                       "(versión de entrenamiento, hash verificado)"),
@@ -148,7 +149,7 @@ def construir_tarjeta(estimacion: dict) -> dict:
             },
             "que_cubre": "media de scores AIPW del estrato, no un CATE individual",
         },
-        "version_esquema": "1.2",
+        "version_esquema": "1.3",
     }
 
 
@@ -156,6 +157,12 @@ def validar_tarjeta(tarjeta: dict) -> None:
     faltan = [c for c in CAMPOS_TARJETA if c not in tarjeta]
     if faltan:
         raise ValueError(f"tarjeta incompleta: falta(n) {faltan}")
+    efectivo = tarjeta.get("estimando_efectivo")
+    if not isinstance(efectivo, str) or not efectivo.strip():
+        raise ValueError(
+            "tarjeta: 'estimando_efectivo' debe ser una cadena no vacía; "
+            "una versión promovida debe declarar si reporta el ATE poblacional "
+            "o el ATE en la población con solapamiento tras el trimming")
     for supuesto in tarjeta["supuestos"]:
         if supuesto.get("clase") not in ("observable", "no_observable"):
             raise ValueError(
@@ -186,7 +193,7 @@ def registrar(estimacion: dict, tarjeta: dict, estado_puerta: str = "pasa") -> s
                 for nombre in ("estimacion.json", "tarjeta.json")}
     _escribir(carpeta / "manifest.json", {
         "version": version,
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "dataset_sha256": tarjeta["dataset_sha256"],
         "puerta": estado_puerta,
         "archivos": archivos,
@@ -273,7 +280,7 @@ def _probar_promocion(version: str) -> None:
                 for n in ("estimacion.json", "tarjeta.json")}
     _escribir(carpeta / "manifest.json", {
         "version": version,
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "dataset_sha256": "prueba",
         "puerta": "falla",
         "archivos": archivos,
