@@ -12,6 +12,13 @@ from registro import champion, verificar_alias
 from rutas import ARTEFACTOS, REGISTRO
 from sensibilidad import e_value_continuo
 
+# Convención inicial (no calibración universal): un ESS/n bajo el piso obliga
+# a abstenerse aunque el monitor declare 'pasa'. Es un piso de honestidad
+# estadística: con ESS/n bajo, el IC del champion describe muy pocas unidades
+# efectivas. Sensibilidad ±20 % explorable con la misma disciplina que los
+# umbrales del monitor (factores 0.8, 1 y 1.2).
+PISO_ESS_SOBRE_N = 0.25
+
 _cache: dict = {}
 
 TITULOS = {"poblacional": "EFECTO POBLACIONAL",
@@ -334,6 +341,23 @@ def _abstencion_por_puerta(bundle: dict, tipo: str) -> dict | None:
             "estado_puerta": estado,
             "version": bundle["version"],
         }
+    tarjeta = bundle.get("tarjeta") or {}
+    ess = (tarjeta.get("soporte") or {}).get("ess_sobre_n")
+    if isinstance(ess, (int, float)) and not isinstance(ess, bool):
+        if ess < PISO_ESS_SOBRE_N:
+            return {
+                "estado": "abstencion",
+                "tipo": tipo,
+                "motivo": (
+                    f"ESS/n = {ess:.2f} bajo el piso declarado en el contrato "
+                    f"({PISO_ESS_SOBRE_N:.2f}): soporte insuficiente por "
+                    "declaración del contrato, no por calibración universal; "
+                    "no se devuelve ningún número"),
+                "estado_puerta": estado,
+                "ess_sobre_n": float(ess),
+                "piso_ess_sobre_n": PISO_ESS_SOBRE_N,
+                "version": bundle["version"],
+            }
     return None
 
 

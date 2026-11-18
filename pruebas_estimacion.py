@@ -375,6 +375,29 @@ def main() -> int:
     else:
         raise AssertionError("folds_crossfit aceptó n < k")
 
+    # 12e. La puerta del servicio se abstiene con ESS/n bajo el piso declarado.
+    import servicio_core
+    bundle_ess_bajo = {
+        "integridad_valida": True,
+        "tarjeta": {"soporte": {"ess_sobre_n": 0.10}},
+        "monitor": None,
+        "manifest": {"puerta": "pasa"},
+        "estimacion": {},
+        "version": "vTEST",
+    }
+    salida = servicio_core._abstencion_por_puerta(bundle_ess_bajo, "poblacional")
+    assert salida is not None and salida["estado"] == "abstencion"
+    assert "ESS/n" in salida["motivo"]
+    assert salida["ess_sobre_n"] == 0.10
+    bundle_ess_ok = dict(
+        bundle_ess_bajo, tarjeta={"soporte": {"ess_sobre_n": 0.74}})
+    assert servicio_core._abstencion_por_puerta(
+        bundle_ess_ok, "poblacional") is None
+    bundle_roto = {"integridad_valida": False, "motivo_carga": "x",
+                   "version": "vTEST"}
+    assert servicio_core._abstencion_por_puerta(
+        bundle_roto, "estrato")["estado"] == "abstencion"
+
     # 13. La pared: ni el estimador ni la sensibilidad leen interventions.json.
     #    Se permite mencionarlo en un docstring; se rechazan lecturas reales.
     for nombre in ("estimacion.py", "sensibilidad.py"):
