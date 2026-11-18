@@ -24,7 +24,12 @@
     "semillas_independientes": "Flujos NumPy derivados de SeedSequence([semilla, 0]) para datos y SeedSequence([semilla, 1]) para los pliegues de AIPW.",
     "ingenuo_se_ic": "SE de Welch sqrt(s1^2/n1 + s0^2/n0); IC95 = ATE +/- 1.96*SE",
     "ols_se_ic": "SE e IC devueltos por ate_ols: IC95 = ATE +/- 1.96*SE",
-    "aipw_se_ic": "SE e IC devueltos por aipw_crossfit con K=5 y su trimming declarado; IC95 = ATE +/- 1.96*SE"
+    "aipw_se_ic": "SE e IC devueltos por aipw_crossfit con K=5 y su trimming declarado; IC95 = ATE +/- 1.96*SE",
+    "aipw_sin_crossfit_se_ic": "Misma especificación que aipw_crossfit (lineales/logística, trimming declarado), pero ajustando y prediciendo sobre las MISMAS observaciones; existe para cuantificar el coste de no usar cross-fitting. IC95 = ATE +/- 1.96*SE",
+    "compuerta_promocion": {
+      "criterio": "IC95 de aipw dentro de [0.90, 0.99] y |sesgo| <= 0.10",
+      "naturaleza": "Convención inicial para la puerta de promoción; no es una calibración universal ni una garantía fuera de este DGP."
+    }
   },
   "estimadores": {
     "aipw": {
@@ -34,6 +39,14 @@
       "sesgo": -0.0002653905879895957,
       "rmse": 0.11366262825164142,
       "longitud_media_ic": 0.44239321869283027
+    },
+    "aipw_sin_crossfit": {
+      "n_repeticiones": 100,
+      "cobertura_ic95": 0.96,
+      "error_monte_carlo": 0.019595917942265433,
+      "sesgo": 0.0001717560751560221,
+      "rmse": 0.10664760469447244,
+      "longitud_media_ic": 0.4064099687947433
     },
     "ols_ajustado": {
       "n_repeticiones": 100,
@@ -52,6 +65,17 @@
       "longitud_media_ic": 0.554932919485122
     }
   },
+  "compuerta": {
+    "pasa": true,
+    "estimador": "aipw",
+    "umbrales": {
+      "cobertura_ic95_min": 0.9,
+      "cobertura_ic95_max": 0.99,
+      "sesgo_abs_max": 0.1
+    },
+    "problemas": [],
+    "nota": "Convención inicial declarada para la puerta de promoción; no es una calibración universal ni una garantía fuera de este DGP. CI ejecuta esta compuerta sobre la corrida por defecto."
+  },
   "resumen": {
     "nominal": 0.95,
     "comparacion_cobertura": {
@@ -60,6 +84,12 @@
         "diferencia_vs_nominal": 0.020000000000000018,
         "error_monte_carlo": 0.017058722109231986,
         "dentro_de_mas_menos_1_error_mc": false
+      },
+      "aipw_sin_crossfit": {
+        "cobertura_ic95": 0.96,
+        "diferencia_vs_nominal": 0.010000000000000009,
+        "error_monte_carlo": 0.019595917942265433,
+        "dentro_de_mas_menos_1_error_mc": true
       },
       "ols_ajustado": {
         "cobertura_ic95": 0.96,

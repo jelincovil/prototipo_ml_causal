@@ -80,11 +80,27 @@ política pública.
 
 `make cobertura` genera `artifacts/cobertura.json` para un **DGP ilustrativo
 propio**, con `n = 500`, `R = 100` y semilla `20261111`. La corrida conservada
-obtuvo coberturas IC95 de **0,97 (AIPW)**, **0,96 (OLS ajustado)** y **0,00
-(ingenuo)**, con errores Monte Carlo de 0,01706, 0,01960 y 0. El AIPW difiere
-0,02 del nominal y no queda dentro de ±1 error Monte Carlo: no es una
-calibración exacta. Estas cifras solo se refieren a ese DGP, no a IHDP/jobs ni
-a datos reales.
+obtuvo coberturas IC95 de **0,97 (AIPW)**, **0,96 (AIPW sin cross-fitting)**,
+**0,96 (OLS ajustado)** y **0,00 (ingenuo)**, con errores Monte Carlo de
+0,01706, 0,01960, 0,01960 y 0. El AIPW difiere 0,02 del nominal y no queda
+dentro de ±1 error Monte Carlo: no es una calibración exacta. Con nuisance
+bien especificados (lineales/logística), evaluar in-sample cuesta ~1 punto de
+cobertura; el caso severo de sobreajuste es el del capítulo 10 del libro.
+`make cobertura-compuerta` convierte la simulación en **compuerta de
+promoción** (IC95 de AIPW dentro de [0.90, 0.99] y |sesgo| ≤ 0,10) y CI la
+ejecuta: una corrida que incumple bloquea la promoción de versiones. Estas
+cifras solo se refieren a ese DGP, no a IHDP/jobs ni a datos reales.
+
+### Guía del método (para el operador del modelo)
+
+[`docs/SESION_DML_40MIN.pdf`](docs/SESION_DML_40MIN.pdf) es la guía del
+profesor de una sesión de 40 minutos: por qué el error del nuisance entra en
+primer orden, cómo lo degrada la ortogonalidad de Neyman, qué hace
+(y qué no hace) el _cross-fitting_, y el checklist de 8 puntos que debe
+acompañar toda respuesta que sirva este prototipo. Es material de docencia:
+no sustituye la tarjeta ni la puerta, y no convierte el endpoint en evidencia
+de identificación. Léela antes de promover una versión o de interpretar el
+ATE servido.
 
 ## Instalación manual alternativa (sin los scripts)
 

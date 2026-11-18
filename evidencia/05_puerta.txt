@@ -1,4 +1,4 @@
-ventanas de producción (contra champion = v0008, umbrales de la tarjeta: {'smd_max': 0.5, 'smd_ponderado_max': 0.25, 'psi_alerta': 0.25, 'solape_min': 0.3, 'efecto_estabilidad': 0.2})
+ventanas de producción (contra champion = v0010, umbrales de la tarjeta: {'smd_max': 0.5, 'smd_ponderado_max': 0.25, 'psi_alerta': 0.25, 'solape_min': 0.3, 'efecto_estabilidad': 0.2})
 
 [sana           ] estado = pasa   | acción: continuar
                   n=300 | PSI máx = 0.024 | SMD máx = 0.33 | SMD pond. = 0.07 | ESS/n = 0.8 | solape = 100%
