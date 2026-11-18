@@ -173,7 +173,8 @@ def main() -> int:
     assert (meta["n"], meta["repeticiones"], meta["semilla"]) == (60, 2, 20261111)
     assert meta["K"] == 5 and meta["nominal"] == cobertura.NOMINAL
     assert meta["verdad"]["valor"] == cobertura.ATE_VERDADERO
-    nombres_estimadores = {"aipw", "ols_ajustado", "ingenuo"}
+    nombres_estimadores = {"aipw", "aipw_sin_crossfit",
+                           "ols_ajustado", "ingenuo"}
     assert set(cob1["estimadores"]) == nombres_estimadores
     comparacion_cob = cob1["resumen"]["comparacion_cobertura"]
     assert set(comparacion_cob) == nombres_estimadores

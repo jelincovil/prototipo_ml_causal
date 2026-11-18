@@ -1,7 +1,9 @@
 """Simulación Monte Carlo de cobertura de IC95 en un DGP ilustrativo propio.
 
-El ejercicio compara AIPW con cross-fitting, OLS ajustado y la diferencia
-ingenua de medias cuando las seis covariables observadas confunden D e Y.
+El ejercicio compara AIPW con cross-fitting, AIPW sin cross-fitting (la
+misma especificación ajustando y prediciendo sobre las mismas observaciones),
+OLS ajustado y la diferencia ingenua de medias cuando las seis covariables
+observadas confunden D e Y.
 NO reproduce el DGP de Hill/IHDP, no lee ``interventions.json`` ni ningún dato
 del benchmark. En particular, la cobertura estimada solo describe este DGP:
 no demuestra identificación ni calibración para los escenarios IHDP o jobs.
@@ -34,7 +36,7 @@ from typing import Any
 import numpy as np
 
 from datos import EsquemaCausal
-from estimacion import aipw_crossfit, ate_ols
+from estimacion import aipw_crossfit, aipw_sin_crossfit, ate_ols
 
 K = 5
 NOMINAL = 0.95
@@ -212,6 +214,12 @@ def _metadatos(n: int, repeticiones: int, semilla: int) -> dict[str, Any]:
             "SE e IC devueltos por aipw_crossfit con K=5 y su trimming declarado; "
             "IC95 = ATE +/- 1.96*SE"
         ),
+        "aipw_sin_crossfit_se_ic": (
+            "Misma especificación que aipw_crossfit (lineales/logística, trimming "
+            "declarado), pero ajustando y prediciendo sobre las MISMAS "
+            "observaciones; existe para cuantificar el coste de no usar "
+            "cross-fitting. IC95 = ATE +/- 1.96*SE"
+        ),
         "compuerta_promocion": {
             "criterio": "IC95 de aipw dentro de [0.90, 0.99] y |sesgo| <= 0.10",
             "naturaleza": (
@@ -245,7 +253,8 @@ def ejecutar(n: int = 500, repeticiones: int = 100, semilla: int = 20261111) -> 
     )
     rng_datos = np.random.default_rng(np.random.SeedSequence([semilla, 0]))
     rng_pliegues = np.random.default_rng(np.random.SeedSequence([semilla, 1]))
-    resultados = {"aipw": [], "ols_ajustado": [], "ingenuo": []}
+    resultados = {"aipw": [], "aipw_sin_crossfit": [], "ols_ajustado": [],
+                  "ingenuo": []}
 
     for repeticion in range(repeticiones):
         try:
@@ -257,6 +266,9 @@ def ejecutar(n: int = 500, repeticiones: int = 100, semilla: int = 20261111) -> 
                     "aipw", aipw_crossfit(
                         col, esquema, k=K, semilla_folds=semilla_folds
                     )
+                ),
+                "aipw_sin_crossfit": _validar_estimacion(
+                    "aipw_sin_crossfit", aipw_sin_crossfit(col, esquema)
                 ),
                 "ols_ajustado": _validar_estimacion(
                     "ols_ajustado", ate_ols(col, esquema)

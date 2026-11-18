@@ -261,6 +261,35 @@ def aipw_crossfit(col: dict, esquema: EsquemaCausal, k: int = 5,
             }}
 
 
+def aipw_sin_crossfit(col: dict, esquema: EsquemaCausal,
+                      resultado: str | None = None) -> dict:
+    """AIPW ajustando y prediciendo en LA MISMA muestra (sin cross-fitting).
+
+    Idéntica especificación que ``aipw_crossfit`` (resultado lineal, propensión
+    logística, trimming [0.05, 0.95]); la única diferencia es que los nuisance
+    se ajustan y se evalúan con las mismas observaciones. Existe para medir,
+    en el DGP ilustrativo de cobertura, el coste de evaluar con datos vistos;
+    no es un estimador alternativo recomendable en producción.
+    """
+    y_key = resultado or esquema.resultado
+    n = len(col[esquema.tratamiento])
+    D, Y = col[esquema.tratamiento], col[y_key]
+    X = np.column_stack([col[c] for c in esquema.covariables])
+    b1 = _ajustar_lineal(X[D == 1], Y[D == 1])
+    b0 = _ajustar_lineal(X[D == 0], Y[D == 0])
+    Xf = np.column_stack([np.ones(n), X])
+    mu1, mu0 = Xf @ b1, Xf @ b0
+    e_crudo = _propensity_fit(X, D)(X)
+    positividad = diagnosticos_positividad(e_crudo, D)
+    e = np.clip(e_crudo, 0.05, 0.95)
+    score = (mu1 - mu0 + D * (Y - mu1) / e
+             - (1 - D) * (Y - mu0) / (1 - e))
+    ate = float(score.mean())
+    se = float(score.std(ddof=1) / np.sqrt(n))
+    return {"ate": ate, "se": se, "ic": [ate - 1.96 * se, ate + 1.96 * se],
+            "diagnosticos_positividad": positividad}
+
+
 def estratos_heterogeneidad(score: np.ndarray, col: dict,
                             esquema: EsquemaCausal) -> dict:
     """Un solo corte de heterogeneidad, pre-declarado en la tarjeta.
